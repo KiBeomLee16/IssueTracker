@@ -3,12 +3,16 @@ package com.example.issuetracker.dto;
 import com.example.issuetracker.entity.Issue;
 import com.example.issuetracker.entity.IssuePriority;
 import com.example.issuetracker.entity.IssueStatus;
+
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Getter
+
 public class IssueResponse {
 
     private final Long id;
@@ -32,4 +36,15 @@ public class IssueResponse {
         this.createdAt = issue.getCreatedAt();
         this.updatedAt = issue.getUpdatedAt();
     }
+    
+
+
+
+    public static IssueResponse from(Issue issue) {
+        return new IssueResponse(issue);
+    }
+
+
+
+
 }

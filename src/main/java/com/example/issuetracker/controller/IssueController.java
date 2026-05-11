@@ -3,9 +3,15 @@ package com.example.issuetracker.controller;
 import com.example.issuetracker.dto.IssueCreateRequest;
 import com.example.issuetracker.dto.IssueResponse;
 import com.example.issuetracker.dto.IssueUpdateRequest;
+import com.example.issuetracker.entity.IssuePriority;
+import com.example.issuetracker.entity.IssueStatus;
 import com.example.issuetracker.response.ApiResponse;
+import com.example.issuetracker.response.PageResponse;
 import com.example.issuetracker.service.IssueService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -74,6 +80,37 @@ public class IssueController {
 
         return ResponseEntity.ok(
                 ApiResponse.success("Issue deleted successfully.")
+        );
+    }
+    
+    @GetMapping("/pages/{projectId}/issues")
+    public ResponseEntity<ApiResponse<PageResponse<IssueResponse>>> searchIssuesByProject(
+            @PathVariable Long projectId,
+            @RequestParam(required = false) IssueStatus status,
+            @RequestParam(required = false) IssuePriority priority,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
+            @RequestParam(defaultValue = "id") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction
+    ) {
+        PageResponse<IssueResponse> response = issueService.searchIssuesByProject(
+                projectId,
+                status,
+                priority,
+                keyword,
+                page,
+                size,
+                sortBy,
+                direction
+        );
+
+        return ResponseEntity.ok(
+                new ApiResponse<PageResponse<IssueResponse>>(
+                        true,
+                        "Issues retrieved successfully",
+                        response
+                )
         );
     }
 }

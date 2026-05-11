@@ -4,16 +4,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.example.issuetracker.dto.IssueCreateRequest;
 import com.example.issuetracker.dto.IssueResponse;
 import com.example.issuetracker.dto.IssueUpdateRequest;
 import com.example.issuetracker.entity.Issue;
+import com.example.issuetracker.entity.IssuePriority;
+import com.example.issuetracker.entity.IssueStatus;
 import com.example.issuetracker.entity.Project;
 import com.example.issuetracker.exception.ResourceNotFoundException;
+import org.springframework.data.domain.Page;
+
 import com.example.issuetracker.repository.IssueRepository;
 import com.example.issuetracker.repository.ProjectRepository;
+import com.example.issuetracker.response.PageResponse;
 @Service
 public class IssueServiceImpl implements IssueService {
 	@Autowired
@@ -57,5 +65,51 @@ public class IssueServiceImpl implements IssueService {
 		Issue issue = issueRepo.findById(issueId).orElseThrow(() -> new ResourceNotFoundException("Issue not found. id=" + issueId));
 		issueRepo.delete(issue);
 	}
+
+	@Override
+	public PageResponse<IssueResponse> searchIssuesByProject(Long projectId, IssueStatus status, IssuePriority priority,
+		String keyword, int page, int size, String sortBy, String direction) {
+		   Project project = projectRepo.findById(projectId).orElseThrow(() -> new ResourceNotFoundException("Project not found. id = " + projectId));
+		   String normalizedKeyword = normalizeKeyword(keyword);
+		   Sort.Direction sortDirection = direction.equalsIgnoreCase("asc")
+	                ? Sort.Direction.ASC
+	                : Sort.Direction.DESC;
+		   Pageable pageable = PageRequest.of(
+	                page,
+	                size,
+	                Sort.by(sortDirection, sortBy)
+	        );
+		   Page<Issue> issuePage = issueRepo.searchIssuesByProject(
+	                project.getId(),
+	                status,
+	                priority,
+	                normalizedKeyword,
+	                pageable
+	        );
+		   
+		   List<IssueResponse> content = issuePage.getContent()
+	                .stream()
+	                .map(IssueResponse::from)
+	                .toList();
+		   
+		   return new PageResponse<>(
+	                content,
+	                issuePage.getNumber(),
+	                issuePage.getSize(),
+	                issuePage.getTotalElements(),
+	                issuePage.getTotalPages(),
+	                issuePage.isFirst(),
+	                issuePage.isLast()
+	        );
+		   
+	}
+	
+	private String normalizeKeyword(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return null;
+        }
+
+        return keyword.trim();
+    }
 
 }
