@@ -20,7 +20,7 @@ public class ProjectController {
     @Autowired
     private ProjectService projectService;
 
-    @PostMapping
+    @PostMapping("/create")
     public ResponseEntity<ApiResponse<ProjectResponse>> createProject(
             @Valid @RequestBody ProjectCreateRequest request
     ) {
@@ -31,7 +31,7 @@ public class ProjectController {
                 .body(ApiResponse.success("Project created successfully.", response));
     }
 
-    @GetMapping
+    @GetMapping("/getAllProjects")
     public ResponseEntity<ApiResponse<List<ProjectResponse>>> getProjects() {
         List<ProjectResponse> response = projectService.getProjects();
 
@@ -40,7 +40,7 @@ public class ProjectController {
         );
     }
 
-    @GetMapping("/{projectId}")
+    @GetMapping("/get/{projectId}")
     public ResponseEntity<ApiResponse<ProjectResponse>> getProject(
             @PathVariable Long projectId
     ) {
@@ -51,7 +51,7 @@ public class ProjectController {
         );
     }
 
-    @PutMapping("/{projectId}")
+    @PutMapping("/update/{projectId}")
     public ResponseEntity<ApiResponse<ProjectResponse>> updateProject(
             @PathVariable Long projectId,
             @Valid @RequestBody ProjectUpdateRequest request
@@ -63,7 +63,7 @@ public class ProjectController {
         );
     }
 
-    @DeleteMapping("/{projectId}")
+    @DeleteMapping("/delete/{projectId}")
     public ResponseEntity<ApiResponse<Void>> deleteProject(
             @PathVariable Long projectId
     ) {

@@ -15,7 +15,7 @@ public class ProjectCreateRequest {
 
     private String description;
 
-    @NotNull(message = "Project status is required.")
+ 
     private ProjectStatus status;
     
     public ProjectCreateRequest (String name , String description) {
