@@ -1,4 +1,4 @@
-package com.example.issuetracker.service;
+package com.example.issuetracker.serviceImpl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,8 +10,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.example.issuetracker.dto.IssueCreateRequest;
-import com.example.issuetracker.dto.IssueResponse;
-import com.example.issuetracker.dto.IssueUpdateRequest;
+import com.example.issuetracker.dto.UpdateRequest.IssueStatusUpdateRequest;
+import com.example.issuetracker.dto.UpdateRequest.IssueUpdateRequest;
+import com.example.issuetracker.dto.response.IssueResponse;
 import com.example.issuetracker.entity.Issue;
 import com.example.issuetracker.entity.IssuePriority;
 import com.example.issuetracker.entity.IssueStatus;
@@ -22,6 +23,7 @@ import org.springframework.data.domain.Page;
 import com.example.issuetracker.repository.IssueRepository;
 import com.example.issuetracker.repository.ProjectRepository;
 import com.example.issuetracker.response.PageResponse;
+import com.example.issuetracker.service.IssueService;
 @Service
 public class IssueServiceImpl implements IssueService {
 	@Autowired
@@ -71,7 +73,7 @@ public class IssueServiceImpl implements IssueService {
 		String keyword, int page, int size, String sortBy, String direction) {
 		   Project project = projectRepo.findById(projectId).orElseThrow(() -> new ResourceNotFoundException("Project not found. id = " + projectId));
 		   String normalizedKeyword = normalizeKeyword(keyword);
-		   Sort.Direction sortDirection = direction.equalsIgnoreCase("asc")
+		   Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction)
 	                ? Sort.Direction.ASC
 	                : Sort.Direction.DESC;
 		   Pageable pageable = PageRequest.of(
@@ -88,8 +90,8 @@ public class IssueServiceImpl implements IssueService {
 	        );
 		   
 		   List<IssueResponse> content = issuePage.getContent()
-	                .stream()
-	                .map(IssueResponse::from)
+	                .stream()	
+	                .map(IssueResponse::responseDto)
 	                .toList();
 		   
 		   return new PageResponse<>(
@@ -111,5 +113,13 @@ public class IssueServiceImpl implements IssueService {
 
         return keyword.trim();
     }
+
+	@Override
+	public IssueResponse updateIssueStatus(Long issueId, IssueStatusUpdateRequest request) {
+		Issue currentIssue = issueRepo.findById(issueId).orElseThrow(() -> new ResourceNotFoundException("Issue ID not found. id = " + issueId));
+		currentIssue.setStatus(request.getStatus());
+		Issue savedIssue = issueRepo.save(currentIssue);
+		return IssueResponse.responseDto(savedIssue);
+	}
 
 }

@@ -1,8 +1,8 @@
 package com.example.issuetracker.controller;
 
 import com.example.issuetracker.dto.ProjectCreateRequest;
-import com.example.issuetracker.dto.ProjectResponse;
-import com.example.issuetracker.dto.ProjectUpdateRequest;
+import com.example.issuetracker.dto.UpdateRequest.ProjectUpdateRequest;
+import com.example.issuetracker.dto.response.ProjectResponse;
 import com.example.issuetracker.response.ApiResponse;
 import com.example.issuetracker.service.ProjectService;
 import jakarta.validation.Valid;

@@ -1,4 +1,4 @@
-package com.example.issuetracker.dto;
+package com.example.issuetracker.dto.UpdateRequest;
 
 import com.example.issuetracker.entity.IssuePriority;
 import com.example.issuetracker.entity.IssueStatus;

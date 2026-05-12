@@ -1,4 +1,4 @@
-package com.example.issuetracker.dto;
+package com.example.issuetracker.dto.response;
 
 import com.example.issuetracker.entity.Project;
 import com.example.issuetracker.entity.ProjectStatus;

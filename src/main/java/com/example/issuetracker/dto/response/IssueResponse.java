@@ -1,4 +1,4 @@
-package com.example.issuetracker.dto;
+package com.example.issuetracker.dto.response;
 
 import com.example.issuetracker.entity.Issue;
 import com.example.issuetracker.entity.IssuePriority;
@@ -40,7 +40,7 @@ public class IssueResponse {
 
 
 
-    public static IssueResponse from(Issue issue) {
+    public static IssueResponse responseDto(Issue issue) {
         return new IssueResponse(issue);
     }
 

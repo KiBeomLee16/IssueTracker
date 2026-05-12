@@ -1,11 +1,13 @@
-package com.example.issuetracker.service;
+package com.example.issuetracker.serviceImpl;
 
 import com.example.issuetracker.dto.ProjectCreateRequest;
-import com.example.issuetracker.dto.ProjectResponse;
-import com.example.issuetracker.dto.ProjectUpdateRequest;
+import com.example.issuetracker.dto.UpdateRequest.ProjectUpdateRequest;
+import com.example.issuetracker.dto.response.ProjectResponse;
 import com.example.issuetracker.entity.Project;
 import com.example.issuetracker.exception.ResourceNotFoundException;
 import com.example.issuetracker.repository.ProjectRepository;
+import com.example.issuetracker.service.ProjectService;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

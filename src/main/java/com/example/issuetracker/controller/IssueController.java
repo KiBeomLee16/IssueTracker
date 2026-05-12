@@ -1,8 +1,9 @@
 package com.example.issuetracker.controller;
 
 import com.example.issuetracker.dto.IssueCreateRequest;
-import com.example.issuetracker.dto.IssueResponse;
-import com.example.issuetracker.dto.IssueUpdateRequest;
+import com.example.issuetracker.dto.UpdateRequest.IssueStatusUpdateRequest;
+import com.example.issuetracker.dto.UpdateRequest.IssueUpdateRequest;
+import com.example.issuetracker.dto.response.IssueResponse;
 import com.example.issuetracker.entity.IssuePriority;
 import com.example.issuetracker.entity.IssueStatus;
 import com.example.issuetracker.response.ApiResponse;
@@ -113,4 +114,17 @@ public class IssueController {
                 )
         );
     }
+    
+    @PatchMapping("/issues/{issueId}/status")
+    public ResponseEntity<ApiResponse<IssueResponse>> updateIssueStatus(
+            @PathVariable Long issueId,
+            @Valid @RequestBody IssueStatusUpdateRequest request
+    ) {
+        IssueResponse response = issueService.updateIssueStatus(issueId, request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Issue status updated successfully", response)
+        );
+    }
+    
 }
