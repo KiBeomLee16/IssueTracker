@@ -56,7 +56,7 @@ public class Issue {
 	private Project project;
 	
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "assignee_id")
+	@JoinColumn(name = "assignedUserId")
 	private User assignee;
 
 	public Issue(String title, String description, IssueStatus status, IssuePriority priority, LocalDate dueDate, Project project) {
