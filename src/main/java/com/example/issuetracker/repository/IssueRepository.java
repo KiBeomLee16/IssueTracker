@@ -18,6 +18,8 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
 
 	public List<Issue> findByProject(Project project);
 
+	long countByAssignee_Id(Long userId);
+	
 	@Query("""
 			SELECT i FROM Issue i WHERE 
 			  i.project.id = :projectId

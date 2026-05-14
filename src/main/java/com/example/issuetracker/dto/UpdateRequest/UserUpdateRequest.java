@@ -1,4 +1,4 @@
-package com.example.issuetracker.dto;
+package com.example.issuetracker.dto.UpdateRequest;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -7,7 +7,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class UserCreateRequest {
+public class UserUpdateRequest {
 
     @NotBlank(message = "Name is Required.")
     private String name;

@@ -107,11 +107,7 @@ public class IssueController {
         );
 
         return ResponseEntity.ok(
-                new ApiResponse<PageResponse<IssueResponse>>(
-                        true,
-                        "Issues retrieved successfully",
-                        response
-                )
+                ApiResponse.success("Issues retrieved successfully", response)
         );
     }
     
