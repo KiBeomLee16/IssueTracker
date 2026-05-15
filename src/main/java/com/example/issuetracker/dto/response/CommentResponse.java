@@ -15,6 +15,7 @@ public class CommentResponse {
 	private Long issueId;
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
+	
 
 	public static CommentResponse responseDto(Comment comment) {
 		return CommentResponse.builder().id(comment.getId()).content(comment.getContent())

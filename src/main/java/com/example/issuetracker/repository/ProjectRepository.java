@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 import com.example.issuetracker.entity.Project;
 @Repository
 public interface ProjectRepository extends JpaRepository<Project, Long> {
+	
 }

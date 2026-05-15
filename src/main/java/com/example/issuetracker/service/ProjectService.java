@@ -4,6 +4,7 @@ import com.example.issuetracker.dto.ProjectCreateRequest;
 import com.example.issuetracker.dto.UpdateRequest.ProjectUpdateRequest;
 import com.example.issuetracker.dto.response.IssueResponse;
 import com.example.issuetracker.dto.response.ProjectResponse;
+import com.example.issuetracker.dto.response.ProjectStatsResponse;
 import com.example.issuetracker.entity.IssuePriority;
 import com.example.issuetracker.entity.IssueStatus;
 import com.example.issuetracker.response.PageResponse;
@@ -21,4 +22,6 @@ public interface ProjectService {
 	ProjectResponse updateProject(Long projectId, ProjectUpdateRequest request);
 
 	void deleteProject(Long projectId);
+	
+	ProjectStatsResponse getProjectStats(Long projectId);
 }

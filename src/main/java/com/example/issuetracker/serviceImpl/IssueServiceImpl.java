@@ -72,7 +72,7 @@ public class IssueServiceImpl implements IssueService {
 		Issue issue = issueRepo.findById(issueId).orElseThrow(() -> new ResourceNotFoundException("Issue not found. id=" + issueId));
 		issueRepo.delete(issue);
 	}
-
+	@Transactional(readOnly = true)
 	@Override
 	public PageResponse<IssueResponse> searchIssuesByProject(Long projectId, IssueStatus status, IssuePriority priority,
 		String keyword, int page, int size, String sortBy, String direction) {

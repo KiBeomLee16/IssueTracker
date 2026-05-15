@@ -32,5 +32,11 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
 			""")
 	public Page<Issue> searchIssuesByProject(@Param("projectId") Long projectId, @Param("status") IssueStatus status,
 			@Param("priority") IssuePriority priority, @Param("keyword") String keyword, Pageable pageable);
+	
+	long countByProject_Id(Long projectId);
+
+	long countByProject_IdAndStatus(Long projectId, IssueStatus status);
+
+	long countByProject_IdAndPriority(Long projectId, IssuePriority priority);
 
 }
