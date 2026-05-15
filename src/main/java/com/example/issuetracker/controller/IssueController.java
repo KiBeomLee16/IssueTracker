@@ -1,5 +1,6 @@
 package com.example.issuetracker.controller;
 
+import com.example.issuetracker.dto.IssueAssignRequest;
 import com.example.issuetracker.dto.IssueCreateRequest;
 import com.example.issuetracker.dto.UpdateRequest.IssueStatusUpdateRequest;
 import com.example.issuetracker.dto.UpdateRequest.IssueUpdateRequest;
@@ -120,6 +121,29 @@ public class IssueController {
 
         return ResponseEntity.ok(
                 ApiResponse.success("Issue status updated successfully", response)
+        );
+    }
+    
+    @PatchMapping("/{issueId}/assignee")
+    public ResponseEntity<ApiResponse<IssueResponse>> assignIssue(
+            @PathVariable Long issueId,
+            @Valid @RequestBody IssueAssignRequest request
+    ) {
+        IssueResponse response = issueService.assignIssue(issueId, request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Issue assignee updated successfully.", response)
+        );
+    }
+
+    @DeleteMapping("/{issueId}/assignee")
+    public ResponseEntity<ApiResponse<IssueResponse>> unassignIssue(
+            @PathVariable Long issueId
+    ) {
+        IssueResponse response = issueService.unassignIssue(issueId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Issue assignee removed successfully.", response)
         );
     }
     

@@ -24,7 +24,7 @@ public class IssueResponse {
     private final LocalDate dueDate;
     private final LocalDateTime createdAt;
     private final LocalDateTime updatedAt;
-
+    private final UserResponse assignee;
     public IssueResponse(Issue issue) {
         this.id = issue.getId();
         this.projectId = issue.getProject().getId();
@@ -35,6 +35,11 @@ public class IssueResponse {
         this.dueDate = issue.getDueDate();
         this.createdAt = issue.getCreatedAt();
         this.updatedAt = issue.getUpdatedAt();
+        if (issue.getAssignee() != null) {
+            this.assignee = UserResponse.getUserResponse(issue.getAssignee());
+        } else {
+            this.assignee = null;
+        }
     }
     
 

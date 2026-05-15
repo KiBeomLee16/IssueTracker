@@ -1,5 +1,6 @@
 package com.example.issuetracker.service;
 
+import com.example.issuetracker.dto.IssueAssignRequest;
 import com.example.issuetracker.dto.IssueCreateRequest;
 import com.example.issuetracker.dto.UpdateRequest.IssueStatusUpdateRequest;
 import com.example.issuetracker.dto.UpdateRequest.IssueUpdateRequest;
@@ -24,5 +25,10 @@ public interface IssueService {
     
 	PageResponse<IssueResponse> searchIssuesByProject(Long projectId, IssueStatus status, IssuePriority priority,
 			String keyword, int page, int size, String sortBy, String direction);
+	
 	IssueResponse updateIssueStatus(Long issueId, IssueStatusUpdateRequest request);
+	
+	IssueResponse assignIssue(Long issueId, IssueAssignRequest request);
+
+	IssueResponse unassignIssue(Long issueId);
 }
