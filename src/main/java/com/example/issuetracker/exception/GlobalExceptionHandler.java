@@ -26,4 +26,10 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.fail("Internal server error"));
 	}
+	
+	@ExceptionHandler
+	public ResponseEntity<ApiResponse<Void>> handleResourceNotFound(IllegalArgumentException message) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.fail(message.getMessage()));
+	}
+
 }

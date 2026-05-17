@@ -1,5 +1,20 @@
 package com.example.issuetracker.controller;
 
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.example.issuetracker.dto.IssueAssignRequest;
 import com.example.issuetracker.dto.IssueCreateRequest;
 import com.example.issuetracker.dto.UpdateRequest.IssueStatusUpdateRequest;
@@ -10,25 +25,22 @@ import com.example.issuetracker.entity.IssueStatus;
 import com.example.issuetracker.response.ApiResponse;
 import com.example.issuetracker.response.PageResponse;
 import com.example.issuetracker.service.IssueService;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-
 @RestController
-@RequestMapping("/api/projects")
+@RequestMapping("/api")
 public class IssueController {
 
     @Autowired
     private IssueService issueService;
 
-    @PostMapping("/{projectId}/issues/create")
+    @PostMapping({
+            "/projects/{projectId}/issues",
+            "/projects/{projectId}/issues/create"
+    })
     public ResponseEntity<ApiResponse<IssueResponse>> createIssue(
             @PathVariable Long projectId,
             @Valid @RequestBody IssueCreateRequest request
@@ -40,7 +52,7 @@ public class IssueController {
                 .body(ApiResponse.success("Issue created successfully.", response));
     }
 
-    @GetMapping("/{projectId}/issues")
+    @GetMapping("/projects/{projectId}/issues")
     public ResponseEntity<ApiResponse<List<IssueResponse>>> getIssuesByProject(
             @PathVariable Long projectId
     ) {
@@ -51,7 +63,10 @@ public class IssueController {
         );
     }
 
-    @GetMapping("/issues/{issueId}")
+    @GetMapping({
+            "/issues/{issueId}",
+            "/projects/issues/{issueId}"
+    })
     public ResponseEntity<ApiResponse<IssueResponse>> getIssue(
             @PathVariable Long issueId
     ) {
@@ -62,7 +77,10 @@ public class IssueController {
         );
     }
 
-    @PutMapping("/issues/update/{issueId}")
+    @PutMapping({
+            "/issues/{issueId}",
+            "/projects/issues/update/{issueId}"
+    })
     public ResponseEntity<ApiResponse<IssueResponse>> updateIssue(
             @PathVariable Long issueId,
             @Valid @RequestBody IssueUpdateRequest request
@@ -74,7 +92,10 @@ public class IssueController {
         );
     }
 
-    @DeleteMapping("/issues/delete/{issueId}")
+    @DeleteMapping({
+            "/issues/{issueId}",
+            "/projects/issues/delete/{issueId}"
+    })
     public ResponseEntity<ApiResponse<Void>> deleteIssue(
             @PathVariable Long issueId
     ) {
@@ -84,8 +105,11 @@ public class IssueController {
                 ApiResponse.success("Issue deleted successfully.")
         );
     }
-    
-    @GetMapping("/pages/{projectId}/issues")
+
+    @GetMapping({
+            "/projects/{projectId}/issues/page",
+            "/projects/pages/{projectId}/issues"
+    })
     public ResponseEntity<ApiResponse<PageResponse<IssueResponse>>> searchIssuesByProject(
             @PathVariable Long projectId,
             @RequestParam(required = false) IssueStatus status,
@@ -111,8 +135,11 @@ public class IssueController {
                 ApiResponse.success("Issues retrieved successfully", response)
         );
     }
-    
-    @PatchMapping("/issues/{issueId}/status")
+
+    @PatchMapping({
+            "/issues/{issueId}/status",
+            "/projects/issues/{issueId}/status"
+    })
     public ResponseEntity<ApiResponse<IssueResponse>> updateIssueStatus(
             @PathVariable Long issueId,
             @Valid @RequestBody IssueStatusUpdateRequest request
@@ -123,8 +150,8 @@ public class IssueController {
                 ApiResponse.success("Issue status updated successfully", response)
         );
     }
-    
-    @PatchMapping("/{issueId}/assignee")
+
+    @PatchMapping("/issues/{issueId}/assignee")
     public ResponseEntity<ApiResponse<IssueResponse>> assignIssue(
             @PathVariable Long issueId,
             @Valid @RequestBody IssueAssignRequest request
@@ -136,7 +163,7 @@ public class IssueController {
         );
     }
 
-    @DeleteMapping("/{issueId}/assignee")
+    @DeleteMapping("/issues/{issueId}/assignee")
     public ResponseEntity<ApiResponse<IssueResponse>> unassignIssue(
             @PathVariable Long issueId
     ) {
@@ -146,5 +173,4 @@ public class IssueController {
                 ApiResponse.success("Issue assignee removed successfully.", response)
         );
     }
-    
 }

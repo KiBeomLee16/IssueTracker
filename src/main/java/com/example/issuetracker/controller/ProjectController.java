@@ -3,6 +3,7 @@ package com.example.issuetracker.controller;
 import com.example.issuetracker.dto.ProjectCreateRequest;
 import com.example.issuetracker.dto.UpdateRequest.ProjectUpdateRequest;
 import com.example.issuetracker.dto.response.ProjectResponse;
+import com.example.issuetracker.dto.response.ProjectStatsResponse;
 import com.example.issuetracker.response.ApiResponse;
 import com.example.issuetracker.service.ProjectService;
 import jakarta.validation.Valid;
@@ -71,6 +72,17 @@ public class ProjectController {
 
         return ResponseEntity.ok(
                 ApiResponse.success("Project deleted successfully.")
+        );
+    }
+    
+    @GetMapping("/{projectId}/stats")
+    public ResponseEntity<ApiResponse<ProjectStatsResponse>> getProjectStats(
+            @PathVariable Long projectId
+    ) {
+        ProjectStatsResponse response = projectService.getProjectStats(projectId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Project stats retrieved successfully.", response)
         );
     }
 }
