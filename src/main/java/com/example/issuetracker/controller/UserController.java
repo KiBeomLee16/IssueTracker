@@ -6,6 +6,9 @@ import com.example.issuetracker.dto.response.UserResponse;
 import com.example.issuetracker.response.ApiResponse;
 import com.example.issuetracker.service.UserService;
 import jakarta.validation.Valid;
+
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,10 +32,13 @@ public class UserController {
                 .body(ApiResponse.success("User created successfully.", response));
     }
 
+
     @GetMapping
-    public ResponseEntity<ApiResponse<?>> getUsers() {
+    public ResponseEntity<ApiResponse<List<UserResponse>>> getUsers() {
+        List<UserResponse> response = userService.getUsers();
+
         return ResponseEntity.ok(
-                ApiResponse.success("Users retrieved successfully.", userService.getUsers())
+                ApiResponse.success("Users retrieved successfully.", response)
         );
     }
 

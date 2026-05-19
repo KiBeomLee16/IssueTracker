@@ -6,10 +6,12 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
+@Setter
 public class ProjectUpdateRequest {
 
     @NotBlank(message = "Project name is required.")
