@@ -708,14 +708,61 @@ GET /api/projects/{projectId}/stats
 
 ---
 
-# Future Improvements
-
 ## Testing
 
-- Add JUnit unit tests
-- Add Mockito-based service tests
-- Add controller tests
-- Add repository tests
+This project includes both Service Layer Unit Tests and Controller Web Layer Tests.
+
+### Service Layer Unit Tests
+
+Service layer tests verify the business logic of each service implementation without starting the full Spring Boot application context.
+
+Tested classes:
+
+- `ProjectServiceImplTest`
+- `UserServiceImplTest`
+- `CommentServiceImplTest`
+- `IssueServiceImplTest`
+
+Main tools:
+
+- JUnit 5
+- Mockito
+- `@ExtendWith(MockitoExtension.class)`
+- Mocked Repository dependencies
+
+These tests focus on validating service logic such as creating, updating, deleting, finding resources, assigning users to issues, and handling not-found cases.
+
+### Controller Web Layer Tests
+
+Controller tests verify REST API request/response behavior using MockMvc.
+
+Tested classes:
+
+- `ProjectControllerTest`
+- `UserControllerTest`
+- `CommentControllerTest`
+- `IssueControllerTest`
+
+Main tools:
+
+- JUnit 5
+- Mockito
+- MockMvc
+- `@WebMvcTest`
+- JSON response validation with `jsonPath`
+
+These tests focus on verifying HTTP status codes, request mappings, validation behavior, and common API response structures using `ApiResponse.success(...)` and `ApiResponse.fail(...)`.
+
+### Running Tests
+
+Run all tests:
+
+
+---
+
+# Future Improvements
+
+
 
 ## Authentication and Authorization
 
