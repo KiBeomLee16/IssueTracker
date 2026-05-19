@@ -4,9 +4,9 @@ import com.example.issuetracker.entity.Issue;
 import com.example.issuetracker.entity.IssuePriority;
 import com.example.issuetracker.entity.IssueStatus;
 
-import lombok.AllArgsConstructor;
+
 import lombok.Getter;
-import lombok.NoArgsConstructor;
+
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
