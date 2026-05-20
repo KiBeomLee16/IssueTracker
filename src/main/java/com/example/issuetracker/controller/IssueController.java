@@ -1,6 +1,7 @@
 package com.example.issuetracker.controller;
 
 import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,10 +38,7 @@ public class IssueController {
     @Autowired
     private IssueService issueService;
 
-    @PostMapping({
-            "/projects/{projectId}/issues",
-            "/projects/{projectId}/issues/create"
-    })
+    @PostMapping("/projects/{projectId}/issues")
     public ResponseEntity<ApiResponse<IssueResponse>> createIssue(
             @PathVariable Long projectId,
             @Valid @RequestBody IssueCreateRequest request
@@ -63,10 +61,7 @@ public class IssueController {
         );
     }
 
-    @GetMapping({
-            "/issues/{issueId}",
-            "/projects/issues/{issueId}"
-    })
+    @GetMapping("/issues/{issueId}")
     public ResponseEntity<ApiResponse<IssueResponse>> getIssue(
             @PathVariable Long issueId
     ) {
@@ -77,10 +72,7 @@ public class IssueController {
         );
     }
 
-    @PutMapping({
-            "/issues/{issueId}",
-            "/projects/issues/update/{issueId}"
-    })
+    @PutMapping("/issues/{issueId}")
     public ResponseEntity<ApiResponse<IssueResponse>> updateIssue(
             @PathVariable Long issueId,
             @Valid @RequestBody IssueUpdateRequest request
@@ -92,10 +84,7 @@ public class IssueController {
         );
     }
 
-    @DeleteMapping({
-            "/issues/{issueId}",
-            "/projects/issues/delete/{issueId}"
-    })
+    @DeleteMapping("/issues/{issueId}")
     public ResponseEntity<ApiResponse<Void>> deleteIssue(
             @PathVariable Long issueId
     ) {
@@ -106,10 +95,7 @@ public class IssueController {
         );
     }
 
-    @GetMapping({
-            "/projects/{projectId}/issues/page",
-            "/projects/pages/{projectId}/issues"
-    })
+    @GetMapping("/projects/{projectId}/issues/page")
     public ResponseEntity<ApiResponse<PageResponse<IssueResponse>>> searchIssuesByProject(
             @PathVariable Long projectId,
             @RequestParam(required = false) IssueStatus status,
@@ -132,14 +118,11 @@ public class IssueController {
         );
 
         return ResponseEntity.ok(
-                ApiResponse.success("Issues retrieved successfully", response)
+                ApiResponse.success("Issues retrieved successfully.", response)
         );
     }
 
-    @PatchMapping({
-            "/issues/{issueId}/status",
-            "/projects/issues/{issueId}/status"
-    })
+    @PatchMapping("/issues/{issueId}/status")
     public ResponseEntity<ApiResponse<IssueResponse>> updateIssueStatus(
             @PathVariable Long issueId,
             @Valid @RequestBody IssueStatusUpdateRequest request
@@ -147,7 +130,7 @@ public class IssueController {
         IssueResponse response = issueService.updateIssueStatus(issueId, request);
 
         return ResponseEntity.ok(
-                ApiResponse.success("Issue status updated successfully", response)
+                ApiResponse.success("Issue status updated successfully.", response)
         );
     }
 

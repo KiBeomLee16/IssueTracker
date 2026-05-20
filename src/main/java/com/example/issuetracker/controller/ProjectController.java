@@ -21,7 +21,7 @@ public class ProjectController {
 	@Autowired
 	private ProjectService projectService;
 
-	@PostMapping({ "", "/create" })
+	@PostMapping({ "",  })
 	public ResponseEntity<ApiResponse<ProjectResponse>> createProject(
 			@Valid @RequestBody ProjectCreateRequest request) {
 		ProjectResponse response = projectService.createProject(request);
@@ -30,21 +30,21 @@ public class ProjectController {
 				.body(ApiResponse.success("Project created successfully.", response));
 	}
 
-	@GetMapping({ "", "/getAllProjects" })
+	@GetMapping({ "", })
 	public ResponseEntity<ApiResponse<List<ProjectResponse>>> getProjects() {
 		List<ProjectResponse> response = projectService.getProjects();
 
 		return ResponseEntity.ok(ApiResponse.success("Projects retrieved successfully.", response));
 	}
 
-	@GetMapping({ "/{projectId}", "/get/{projectId}" })
+	@GetMapping({ "/{projectId}" })
 	public ResponseEntity<ApiResponse<ProjectResponse>> getProject(@PathVariable Long projectId) {
 		ProjectResponse response = projectService.getProject(projectId);
 
 		return ResponseEntity.ok(ApiResponse.success("Project retrieved successfully.", response));
 	}
 
-	@PutMapping({ "/{projectId}", "/update/{projectId}" })
+	@PutMapping({ "/{projectId}" })
 	public ResponseEntity<ApiResponse<ProjectResponse>> updateProject(@PathVariable Long projectId,
 			@Valid @RequestBody ProjectUpdateRequest request) {
 		ProjectResponse response = projectService.updateProject(projectId, request);
@@ -52,7 +52,7 @@ public class ProjectController {
 		return ResponseEntity.ok(ApiResponse.success("Project updated successfully.", response));
 	}
 
-	@DeleteMapping({ "/{projectId}", "/delete/{projectId}" })
+	@DeleteMapping({ "/{projectId}" })
 	public ResponseEntity<ApiResponse<Void>> deleteProject(@PathVariable Long projectId) {
 		projectService.deleteProject(projectId);
 
