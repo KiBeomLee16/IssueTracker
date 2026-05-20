@@ -3,7 +3,7 @@
 A Java + Spring Boot based REST API for managing projects, issues, comments, and users.
 
 This project was built as a personal backend portfolio project.  
-It currently focuses on REST API development and will later be expanded with testing, Docker, CI/CD, Kubernetes, and cloud or low-cost server deployment.
+It focuses on REST API development, testing, API documentation, CI, Docker, and future deployment expansion.
 
 ---
 
@@ -21,8 +21,11 @@ It currently focuses on REST API development and will later be expanded with tes
 | Utility | Lombok |
 | Monitoring | Spring Boot Actuator |
 | API Testing | Postman |
-| Testing Planned | JUnit, Mockito |
-| DevOps Planned | Docker, GitHub Actions or Jenkins, Kubernetes |
+| Testing | JUnit 5, Mockito, MockMvc |
+| CI | GitHub Actions |
+| API Docs | Swagger / OpenAPI |
+| DevOps | Docker |
+| DevOps Planned | Docker Compose, Kubernetes, Cloud or low-cost server deployment |
 
 ---
 
@@ -70,9 +73,12 @@ It currently focuses on REST API development and will later be expanded with tes
 
 - Common API response format
 - Validation handling
-- Exception handling structure
+- Global exception handling
 - Entity relationships
 - REST-style URL design
+- Swagger / OpenAPI documentation
+- GitHub Actions CI
+- Dockerfile support
 
 ---
 
@@ -108,7 +114,7 @@ A user can be assigned to issues.
 
 ## Package Structure
 
-
+ 
 com.example.issuetracker
  ├── controller
  ├── dto
@@ -120,7 +126,7 @@ com.example.issuetracker
  ├── response
  ├── service
  └── serviceImpl
-
+ 
 
 ---
 
@@ -155,6 +161,22 @@ All API responses use a common response wrapper called `ApiResponse`.
 ---
 
 # API Documentation
+
+## Swagger / OpenAPI
+
+Swagger UI:
+
+ 
+http://localhost:8080/swagger-ui/index.html
+ 
+
+OpenAPI JSON:
+
+ 
+http://localhost:8080/v3/api-docs
+ 
+
+---
 
 ## Project API
 
@@ -571,18 +593,39 @@ CREATE DATABASE issue_tracker;
 
 ## 3. Configure Database Settings
 
-Example `application.properties`:
+Example `application.yml`:
 
- properties
-spring.application.name=issue-tracker-api
+ yml
+server:
+  port: 8080
 
-spring.datasource.url=jdbc:mysql://localhost:3306/issue_tracker
-spring.datasource.username=root
-spring.datasource.password=your_password
+spring:
+  application:
+    name: issue-tracker-api
 
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.format_sql=true
+  datasource:
+    url: jdbc:mysql://localhost:3306/issue_tracker?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
  
 
 Update `username`, `password`, and database name based on your local MySQL environment.
@@ -603,10 +646,16 @@ On Windows:
 mvnw.cmd spring-boot:run
  
 
+Or using local Maven:
+
+ bash
+mvn spring-boot:run
+ 
+
 Or run the main class from your IDE:
 
  
-IssueTrackerApplication.java
+IssueTrackerApiApplication.java
  
 
 ---
@@ -615,7 +664,7 @@ IssueTrackerApplication.java
 
 Base URL:
 
- http
+ 
 http://localhost:8080
  
 
@@ -623,6 +672,90 @@ Actuator health check:
 
  http
 GET /actuator/health
+ 
+
+Swagger UI:
+
+ 
+http://localhost:8080/swagger-ui/index.html
+ 
+
+OpenAPI JSON:
+
+ 
+http://localhost:8080/v3/api-docs
+ 
+
+---
+
+# Docker
+
+## Build Docker Image
+
+ bash
+docker build -t issue-tracker-api:latest .
+ 
+
+## Run Docker Container with Local MySQL
+
+When running the application inside a Docker container, use `host.docker.internal` instead of `localhost` to connect to MySQL running on your local machine.
+
+ bash
+docker run --name issue-tracker-api-container -p 8080:8080 \
+  -e SPRING_DATASOURCE_URL="jdbc:mysql://host.docker.internal:3306/issue_tracker?serverTimezone=Asia/Seoul&characterEncoding=UTF-8" \
+  -e SPRING_DATASOURCE_USERNAME="root" \
+  -e SPRING_DATASOURCE_PASSWORD="root" \
+  issue-tracker-api:latest
+ 
+
+One-line command:
+
+ bash
+docker run --name issue-tracker-api-container -p 8080:8080 -e SPRING_DATASOURCE_URL="jdbc:mysql://host.docker.internal:3306/issue_tracker?serverTimezone=Asia/Seoul&characterEncoding=UTF-8" -e SPRING_DATASOURCE_USERNAME="root" -e SPRING_DATASOURCE_PASSWORD="root" issue-tracker-api:latest
+ 
+
+## Docker Commands
+
+Check running containers:
+
+ bash
+docker ps
+ 
+
+Check all containers:
+
+ bash
+docker ps -a
+ 
+
+Stop the container:
+
+ bash
+docker stop issue-tracker-api-container
+ 
+
+Start the container again:
+
+ bash
+docker start issue-tracker-api-container
+ 
+
+View logs:
+
+ bash
+docker logs -f issue-tracker-api-container
+ 
+
+Remove the container:
+
+ bash
+docker rm issue-tracker-api-container
+ 
+
+## Docker Swagger URL
+
+ 
+http://localhost:8080/swagger-ui/index.html
  
 
 ---
@@ -690,29 +823,11 @@ GET /api/projects/{projectId}/stats
 
 ---
 
-# Completed Features
-
-- Project CRUD
-- Issue CRUD
-- Issue search and filtering
-- Issue pagination and sorting
-- Issue status update
-- Issue assignee assignment and unassignment
-- Comment CRUD
-- User CRUD
-- Project issue statistics
-- Common API response format
-- Validation
-- REST-style API URL structure
-- Postman testing
-
----
-
-## Testing
+# Testing
 
 This project includes both Service Layer Unit Tests and Controller Web Layer Tests.
 
-### Service Layer Unit Tests
+## Service Layer Unit Tests
 
 Service layer tests verify the business logic of each service implementation without starting the full Spring Boot application context.
 
@@ -732,7 +847,9 @@ Main tools:
 
 These tests focus on validating service logic such as creating, updating, deleting, finding resources, assigning users to issues, and handling not-found cases.
 
-### Controller Web Layer Tests
+---
+
+## Controller Web Layer Tests
 
 Controller tests verify REST API request/response behavior using MockMvc.
 
@@ -753,16 +870,78 @@ Main tools:
 
 These tests focus on verifying HTTP status codes, request mappings, validation behavior, and common API response structures using `ApiResponse.success(...)` and `ApiResponse.fail(...)`.
 
-### Running Tests
+---
+
+## Running Tests
 
 Run all tests:
 
+ bash
+./mvnw test
+ 
+
+On Windows:
+
+ bash
+mvnw.cmd test
+ 
+
+Or using local Maven:
+
+ bash
+mvn test
+ 
+
+---
+
+# CI
+
+This project uses GitHub Actions to run tests automatically.
+
+Workflow:
+
+ 
+.github/workflows/ci.yml
+ 
+
+Main command:
+
+ bash
+mvn -B test
+ 
+
+The CI workflow runs automatically on push or pull request based on the workflow configuration.
+
+---
+
+# Completed Features
+
+- Project CRUD
+- Issue CRUD
+- Issue search and filtering
+- Issue pagination and sorting
+- Issue status update
+- Issue priority enum
+- Issue assignee assignment and unassignment
+- Comment CRUD
+- User CRUD
+- Project issue statistics
+- Common API response format
+- Global exception handling
+- Validation handling
+- REST-style API URL structure
+- Postman testing
+- Service layer unit tests
+- Controller web layer tests
+- GitHub Actions CI
+- Swagger / OpenAPI documentation
+- Dockerfile
+- Docker image build verification
+- Docker container run verification
 
 ---
 
 # Future Improvements
-
-
 
 ## Authentication and Authorization
 
@@ -773,18 +952,16 @@ Run all tests:
 
 ## DevOps
 
-- Add Dockerfile
 - Add docker-compose with MySQL
-- Add CI/CD using GitHub Actions or Jenkins
+- Add Docker image build step to GitHub Actions
 - Practice Kubernetes deployment
 - Deploy to AWS or a low-cost server
 
 ## Documentation
 
-- Add Swagger / OpenAPI documentation
-- Organize Postman Collection
 - Add ERD image
 - Improve request and response examples
+- Add deployment guide
 
 ## Feature Expansion
 
@@ -801,4 +978,4 @@ Run all tests:
 
 The goal of this project is to build a practical issue tracking REST API, starting from core CRUD features and gradually expanding into testing, Docker, CI/CD, and deployment.
 
-This project is designed to demonstrate backend development skills using Java, Spring Boot, JPA, MySQL, REST API design, validation, exception handling, and layered architecture.
+This project is designed to demonstrate backend development skills using Java, Spring Boot, JPA, MySQL, REST API design, validation, exception handling, testing, API documentation, Docker, and layered architecture.
