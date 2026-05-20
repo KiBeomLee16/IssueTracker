@@ -10,15 +10,15 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  test-and-docker-build:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
@@ -26,3 +26,9 @@ jobs:
 
       - name: Run tests
         run: mvn -B test
+
+      - name: Package application
+        run: mvn -B package -DskipTests
+
+      - name: Build Docker image
+        run: docker build -t issue-tracker-api:ci .
