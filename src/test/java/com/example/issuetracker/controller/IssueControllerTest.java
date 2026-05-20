@@ -273,7 +273,7 @@ public class IssueControllerTest {
                         .param("direction", "desc"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("Issues retrieved successfully"))
+                .andExpect(jsonPath("$.message").value("Issues retrieved successfully."))
                 .andExpect(jsonPath("$.data.content[0].id").value(1))
                 .andExpect(jsonPath("$.data.content[0].title").value("Login bug"))
                 .andExpect(jsonPath("$.data.page").value(0))
@@ -324,7 +324,7 @@ public class IssueControllerTest {
                         .content(requestBody))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("Issue status updated successfully"))
+                .andExpect(jsonPath("$.message").value("Issue status updated successfully."))
                 .andExpect(jsonPath("$.data.id").value(1))
                 .andExpect(jsonPath("$.data.status").value("DONE"));
 
