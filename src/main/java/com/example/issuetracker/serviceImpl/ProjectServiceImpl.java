@@ -1,7 +1,7 @@
 package com.example.issuetracker.serviceImpl;
 
-import com.example.issuetracker.dto.ProjectCreateRequest;
 import com.example.issuetracker.dto.UpdateRequest.ProjectUpdateRequest;
+import com.example.issuetracker.dto.request.ProjectCreateRequest;
 import com.example.issuetracker.dto.response.ProjectResponse;
 import com.example.issuetracker.dto.response.ProjectStatsResponse;
 import com.example.issuetracker.entity.IssuePriority;

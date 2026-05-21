@@ -1,4 +1,4 @@
-package com.example.issuetracker.dto;
+package com.example.issuetracker.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

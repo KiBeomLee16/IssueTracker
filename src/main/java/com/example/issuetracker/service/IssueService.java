@@ -1,9 +1,9 @@
 package com.example.issuetracker.service;
 
-import com.example.issuetracker.dto.IssueAssignRequest;
-import com.example.issuetracker.dto.IssueCreateRequest;
 import com.example.issuetracker.dto.UpdateRequest.IssueStatusUpdateRequest;
 import com.example.issuetracker.dto.UpdateRequest.IssueUpdateRequest;
+import com.example.issuetracker.dto.request.IssueAssignRequest;
+import com.example.issuetracker.dto.request.IssueCreateRequest;
 import com.example.issuetracker.dto.response.IssueResponse;
 import com.example.issuetracker.entity.IssuePriority;
 import com.example.issuetracker.entity.IssueStatus;

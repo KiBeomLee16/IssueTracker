@@ -1,7 +1,7 @@
 package com.example.issuetracker.controller;
 
-import com.example.issuetracker.dto.CommentCreateRequest;
 import com.example.issuetracker.dto.UpdateRequest.CommentUpdateRequest;
+import com.example.issuetracker.dto.request.CommentCreateRequest;
 import com.example.issuetracker.dto.response.CommentResponse;
 import com.example.issuetracker.response.ApiResponse;
 import com.example.issuetracker.service.CommentService;

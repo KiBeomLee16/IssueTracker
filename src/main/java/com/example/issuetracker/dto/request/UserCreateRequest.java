@@ -1,4 +1,4 @@
-package com.example.issuetracker.dto;
+package com.example.issuetracker.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -18,4 +18,7 @@ public class UserCreateRequest {
     
     @NotBlank(message = "User Id is Required.")
     private String userId;
-}
+    
+    @NotBlank(message = "User Password is Required.")
+    private String password;
+}	

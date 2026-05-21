@@ -5,8 +5,8 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.example.issuetracker.dto.CommentCreateRequest;
 import com.example.issuetracker.dto.UpdateRequest.CommentUpdateRequest;
+import com.example.issuetracker.dto.request.CommentCreateRequest;
 import com.example.issuetracker.dto.response.CommentResponse;
 import com.example.issuetracker.entity.Comment;
 import com.example.issuetracker.entity.Issue;

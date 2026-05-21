@@ -19,17 +19,24 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.example.issuetracker.dto.CommentCreateRequest;
 import com.example.issuetracker.dto.UpdateRequest.CommentUpdateRequest;
+import com.example.issuetracker.dto.request.CommentCreateRequest;
 import com.example.issuetracker.dto.response.CommentResponse;
+import com.example.issuetracker.security.CustomUserDetailsService;
+import com.example.issuetracker.security.JwtAuthenticationFilter;
+import com.example.issuetracker.security.JwtTokenProvider;
 import com.example.issuetracker.service.CommentService;
 
 @WebMvcTest(CommentController.class)
+@WithMockUser(username = "user01", roles = "USER")
+@AutoConfigureMockMvc(addFilters = false)
 public class CommentControllerTest {
 
     @Autowired
@@ -37,6 +44,15 @@ public class CommentControllerTest {
 
     @MockitoBean
     private CommentService commentService;
+    
+    @MockitoBean
+    private CustomUserDetailsService customUserDetailsService;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
 
     @Test
     void createComment_success() throws Exception {

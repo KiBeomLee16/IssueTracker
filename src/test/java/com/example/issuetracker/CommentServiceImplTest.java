@@ -19,8 +19,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import com.example.issuetracker.dto.CommentCreateRequest;
 import com.example.issuetracker.dto.UpdateRequest.CommentUpdateRequest;
+import com.example.issuetracker.dto.request.CommentCreateRequest;
 import com.example.issuetracker.dto.response.CommentResponse;
 import com.example.issuetracker.entity.Comment;
 import com.example.issuetracker.entity.Issue;

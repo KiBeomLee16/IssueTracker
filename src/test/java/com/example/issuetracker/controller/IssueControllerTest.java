@@ -21,16 +21,18 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
-import com.example.issuetracker.dto.IssueAssignRequest;
-import com.example.issuetracker.dto.IssueCreateRequest;
 import com.example.issuetracker.dto.UpdateRequest.IssueStatusUpdateRequest;
 import com.example.issuetracker.dto.UpdateRequest.IssueUpdateRequest;
+import com.example.issuetracker.dto.request.IssueAssignRequest;
+import com.example.issuetracker.dto.request.IssueCreateRequest;
 import com.example.issuetracker.dto.response.IssueResponse;
 import com.example.issuetracker.entity.Issue;
 import com.example.issuetracker.entity.IssuePriority;
@@ -38,16 +40,30 @@ import com.example.issuetracker.entity.IssueStatus;
 import com.example.issuetracker.entity.Project;
 import com.example.issuetracker.entity.User;
 import com.example.issuetracker.response.PageResponse;
+import com.example.issuetracker.security.CustomUserDetailsService;
+import com.example.issuetracker.security.JwtAuthenticationFilter;
+import com.example.issuetracker.security.JwtTokenProvider;
 import com.example.issuetracker.service.IssueService;
 
 @WebMvcTest(IssueController.class)
+@WithMockUser(username = "user01", roles = "USER")
+@AutoConfigureMockMvc(addFilters = false)
 public class IssueControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+	   @Autowired
+	    private MockMvc mockMvc;
 
-    @MockitoBean
-    private IssueService issueService;
+	    @MockitoBean
+	    private IssueService issueService;
+
+	    @MockitoBean
+	    private CustomUserDetailsService customUserDetailsService;
+
+	    @MockitoBean
+	    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+	    @MockitoBean
+	    private JwtTokenProvider jwtTokenProvider;
 
     @Test
     void createIssue_success() throws Exception {

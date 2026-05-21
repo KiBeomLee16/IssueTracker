@@ -17,20 +17,27 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.example.issuetracker.controller.UserController;
-import com.example.issuetracker.dto.UserCreateRequest;
 import com.example.issuetracker.dto.UpdateRequest.UserUpdateRequest;
+import com.example.issuetracker.dto.request.UserCreateRequest;
 import com.example.issuetracker.dto.response.UserResponse;
 import com.example.issuetracker.entity.User;
+import com.example.issuetracker.security.CustomUserDetailsService;
+import com.example.issuetracker.security.JwtAuthenticationFilter;
+import com.example.issuetracker.security.JwtTokenProvider;
 import com.example.issuetracker.service.UserService;
 
 @WebMvcTest(UserController.class)
+@WithMockUser(username = "user01", roles = "USER")
+@AutoConfigureMockMvc(addFilters = false)
 public class UserControllerTest {
 
     @Autowired
@@ -38,6 +45,15 @@ public class UserControllerTest {
 
     @MockitoBean
     private UserService userService;
+    
+    @MockitoBean
+    private CustomUserDetailsService customUserDetailsService;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
 
     @Test
     void createUser_success() throws Exception {
@@ -46,7 +62,8 @@ public class UserControllerTest {
                 {
                   "name": "John Doe",
                   "email": "john@example.com",
-                  "userId": "john01"
+                  "userId": "john01",
+                  "password" : "password"
                 }
                 """;
 

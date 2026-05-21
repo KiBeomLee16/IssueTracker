@@ -4,3 +4,6 @@ spring:
     username: root
     password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
+jwt:
+  secret: ${JWT_SECRET:default-secret-key-default-secret-key-123456}
+  expiration-ms: ${JWT_EXPIRATION_MS:3600000}

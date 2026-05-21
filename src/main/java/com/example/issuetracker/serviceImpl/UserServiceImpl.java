@@ -1,16 +1,19 @@
 package com.example.issuetracker.serviceImpl;
 
 
-import com.example.issuetracker.dto.UserCreateRequest;
 import com.example.issuetracker.dto.UpdateRequest.UserUpdateRequest;
+import com.example.issuetracker.dto.request.UserCreateRequest;
 import com.example.issuetracker.dto.response.UserResponse;
 import com.example.issuetracker.entity.User;
+import com.example.issuetracker.entity.UserRole;
 import com.example.issuetracker.exception.ResourceNotFoundException;
 import com.example.issuetracker.repository.IssueRepository;
 import com.example.issuetracker.repository.UserRepository;
 import com.example.issuetracker.service.UserService;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.config.authentication.PasswordEncoderParser;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,18 +26,36 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private IssueRepository issueRepo;
-
+    @Autowired
+    private PasswordEncoder passwordEncoder;
     @Override
     public UserResponse createUser(UserCreateRequest request) {
         if (userRepo.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+            throw new IllegalArgumentException("this email is already registered");
         }
 
         if (userRepo.existsByUserId(request.getUserId())) {
-            throw new IllegalArgumentException("이미 사용 중인 사용자 ID입니다.");
+            throw new IllegalArgumentException("this ID is already registered");
+        }
+        String encryptedPasswrod = passwordEncoder.encode(request.getPassword());
+        User user = new User(request.getName(), request.getEmail(), request.getUserId(), encryptedPasswrod, UserRole.USER);
+
+        User savedUser = userRepo.save(user);
+
+        return UserResponse.getUserResponse(savedUser);
+    }
+    
+    @Override
+    public UserResponse createAdmin(UserCreateRequest request) {
+        if (userRepo.existsByEmail(request.getEmail())) {
+            throw new IllegalArgumentException("this email is already registered");
         }
 
-        User user = new User(request.getName(), request.getEmail(), request.getUserId());
+        if (userRepo.existsByUserId(request.getUserId())) {
+            throw new IllegalArgumentException("this ID is already registered");
+        }
+        String encryptedPasswrod = passwordEncoder.encode(request.getPassword());
+        User user = new User(request.getName(), request.getEmail(), request.getUserId(), encryptedPasswrod, UserRole.ADMIN);
 
         User savedUser = userRepo.save(user);
 
@@ -64,13 +85,13 @@ public class UserServiceImpl implements UserService {
 
         userRepo.findByEmail(request.getEmail()).ifPresent(foundUser -> {
             if (!foundUser.getId().equals(id)) {
-                throw new IllegalArgumentException("이미 사용 중인 이메일입니다.");
+                throw new IllegalArgumentException("this email is already registered");
             }
         });
 
         userRepo.findByUserId(request.getUserId()).ifPresent(foundUser -> {
             if (!foundUser.getId().equals(id)) {
-                throw new IllegalArgumentException("이미 사용 중인 사용자 ID입니다.");
+                throw new IllegalArgumentException("this ID is already registered");
             }
         });
 
@@ -91,7 +112,7 @@ public class UserServiceImpl implements UserService {
         long assignedIssueCount = issueRepo.countByAssignee_Id(id);
 
         if (assignedIssueCount > 0) {
-            throw new IllegalArgumentException("담당자로 지정된 이슈가 있어 사용자를 삭제할 수 없습니다.");
+            throw new IllegalArgumentException("Please contact Admin for delete user");
         }
 
         userRepo.delete(user);

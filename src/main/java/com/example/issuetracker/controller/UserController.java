@@ -1,7 +1,7 @@
 package com.example.issuetracker.controller;
 
-import com.example.issuetracker.dto.UserCreateRequest;
 import com.example.issuetracker.dto.UpdateRequest.UserUpdateRequest;
+import com.example.issuetracker.dto.request.UserCreateRequest;
 import com.example.issuetracker.dto.response.UserResponse;
 import com.example.issuetracker.response.ApiResponse;
 import com.example.issuetracker.service.UserService;
@@ -26,6 +26,17 @@ public class UserController {
             @Valid @RequestBody UserCreateRequest request
     ) {
         UserResponse response = userService.createUser(request);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success("User created successfully.", response));
+    }
+    
+    @PostMapping("/admin")
+    public ResponseEntity<ApiResponse<UserResponse>> createAdmin(
+            @Valid @RequestBody UserCreateRequest request
+    ) {
+        UserResponse response = userService.createAdmin(request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)

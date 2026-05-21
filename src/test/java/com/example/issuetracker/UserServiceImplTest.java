@@ -17,12 +17,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import com.example.issuetracker.dto.UserCreateRequest;
 import com.example.issuetracker.dto.UpdateRequest.UserUpdateRequest;
+import com.example.issuetracker.dto.request.UserCreateRequest;
 import com.example.issuetracker.dto.response.UserResponse;
 import com.example.issuetracker.entity.User;
+import com.example.issuetracker.entity.UserRole;
 import com.example.issuetracker.exception.ResourceNotFoundException;
 import com.example.issuetracker.repository.UserRepository;
 import com.example.issuetracker.serviceImpl.UserServiceImpl;
@@ -39,6 +41,10 @@ public class UserServiceImplTest {
 
 	@Mock
 	private IssueRepository issueRepo;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
+    
 	private User user;
 
 	@BeforeEach
@@ -53,27 +59,44 @@ public class UserServiceImplTest {
 	@Test
 	void createUser_success() {
 		// given
-		UserCreateRequest request = new UserCreateRequest();
-		ReflectionTestUtils.setField(request, "name", "John Doe");
-		ReflectionTestUtils.setField(request, "email", "john@example.com");
+		 UserCreateRequest request = new UserCreateRequest();
+	        request.setName("John Doe");
+	        request.setEmail("john@example.com");
+	        request.setUserId("john01");
+	        request.setPassword("1234");
 
-		when(userRepo.save(any(User.class))).thenAnswer(invocation -> {
-			User savedUser = invocation.getArgument(0);
+	        when(userRepo.existsByEmail("john@example.com"))
+	                .thenReturn(false);
 
-			ReflectionTestUtils.setField(savedUser, "id", 1L);
+	        when(userRepo.existsByUserId("john01"))
+	                .thenReturn(false);
 
-			return savedUser;
-		});
+	        when(passwordEncoder.encode("1234"))
+	                .thenReturn("encodedPassword");
 
-		// when
-		UserResponse response = userService.createUser(request);
+	        User savedUser = new User(
+	            
+	                "John Doe",
+	                "john@example.com",
+	                "john01",
+	                "encodedPassword",
+	                UserRole.USER);
+	             
 
-		// then
-		assertEquals(1L, response.getId());
-		assertEquals("John Doe", response.getName());
-		assertEquals("john@example.com", response.getEmail());
+	        when(userRepo.save(any(User.class)))
+	                .thenReturn(savedUser);
 
-		verify(userRepo).save(any(User.class));
+	        // when
+	        UserResponse response = userService.createUser(request);
+
+	        // then
+
+	        assertEquals("John Doe", response.getName());
+	        assertEquals("john@example.com", response.getEmail());
+	        assertEquals("john01", response.getUserId());
+
+	        verify(passwordEncoder).encode("1234");
+	        verify(userRepo).save(any(User.class));
 	}
 
 	@Test
