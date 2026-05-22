@@ -73,7 +73,7 @@ public class SecurityConfig {
                         ).permitAll()
 
                         // ADMIN만 접근 가능
-                        .requestMatchers("/api/users/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/api/users/**").hasRole( "ADMIN")
 
                         // 로그인한 USER 또는 ADMIN 접근 가능
                         .requestMatchers("/api/projects/**").hasAnyRole("USER", "ADMIN")
