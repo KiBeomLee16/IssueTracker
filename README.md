@@ -1,8 +1,8 @@
 # Issue Tracker REST API
 
-A Java + Spring Boot based REST API for managing projects, issues, comments, and users.
+A Java + Spring Boot based REST API for managing projects, issues, comments, users, authentication, and authorization.
 
-This project was built as a personal backend portfolio project. It focuses on REST API development, layered architecture, validation, exception handling, testing, API documentation, CI, Docker, and Docker Compose based local infrastructure.
+This project was built as a personal backend portfolio project. It focuses on REST API development, layered architecture, validation, exception handling, testing, API documentation, Spring Security, JWT authentication, Docker, Docker Compose, and GitHub Actions CI.
 
 ---
 
@@ -15,20 +15,41 @@ This project was built as a personal backend portfolio project. It focuses on RE
 | Build Tool | Maven |
 | Web | Spring Web MVC |
 | ORM | Spring Data JPA, Hibernate |
-| Database | MySQL |
+| Database | MySQL 8 |
 | Validation | Jakarta Validation |
+| Security | Spring Security, JWT, BCrypt |
 | Utility | Lombok |
 | Monitoring | Spring Boot Actuator |
 | API Testing | Postman |
 | Testing | JUnit 5, Mockito, MockMvc |
-| CI | GitHub Actions |
 | API Docs | Swagger / OpenAPI |
+| CI | GitHub Actions |
 | DevOps | Docker, Docker Compose |
-| DevOps Planned | Docker image build in CI, Kubernetes, cloud or low-cost server deployment |
+| Deployment Planned | AWS Lightsail, EC2, low-cost VPS, or Kubernetes |
+
+---
+
+## Project Overview
+
+Issue Tracker REST API is a backend application for managing projects, issues, comments, and users.
+
+The project started with core CRUD functionality and was gradually expanded with search, filtering, pagination, sorting, status changes, issue assignment, common response format, validation, exception handling, testing, Docker, Docker Compose, GitHub Actions CI, and JWT-based authentication.
 
 ---
 
 ## Main Features
+
+### Authentication & Authorization
+
+- User signup
+- User login
+- BCrypt password encryption
+- JWT access token generation
+- JWT authentication filter
+- Bearer Token based protected API access
+- Stateless authentication
+- USER / ADMIN role support
+- Role-based authorization
 
 ### Project
 
@@ -62,11 +83,12 @@ This project was built as a personal backend portfolio project. It focuses on RE
 
 ### User
 
-- Create user
+- Create user through signup
 - Get all users
 - Get user by ID
 - Update user
 - Delete user
+- USER / ADMIN role management
 
 ### Common
 
@@ -80,6 +102,39 @@ This project was built as a personal backend portfolio project. It focuses on RE
 - Dockerfile support
 - Docker Compose support with MySQL
 - MySQL volume persistence
+- Environment variable separation with `.env` and `.env.example`
+
+---
+
+## Architecture
+
+ 
+Client / Postman / Swagger UI
+        |
+        v
+Controller Layer
+        |
+        v
+Service Layer
+        |
+        v
+Repository Layer
+        |
+        v
+MySQL Database
+ 
+
+### Authentication Flow
+
+ 
+1. Client signs up or logs in
+2. Server validates user credentials
+3. Server returns JWT access token
+4. Client sends token in Authorization header
+5. JwtAuthenticationFilter validates the token
+6. SecurityContext is populated
+7. Protected API is executed based on user role
+ 
 
 ---
 
@@ -88,8 +143,9 @@ This project was built as a personal backend portfolio project. It focuses on RE
  
 Project 1 : N Issue
 Issue   N : 1 Project
-Issue   N : 1 User     // assignee
+Issue   N : 1 User      // assignee
 Issue   1 : N Comment
+User    1 : N Issue
  
 
 ### Project
@@ -98,15 +154,16 @@ A project can have multiple issues.
 
 ### Issue
 
-An issue belongs to one project. An issue can also have one assigned user.
+An issue belongs to one project.  
+An issue can also have one assigned user.
 
 ### Comment
 
-An issue belongs to one issue.
+A comment belongs to one issue.
 
 ### User
 
-A user can be assigned to issues.
+A user can be assigned to multiple issues.
 
 ---
 
@@ -114,14 +171,17 @@ A user can be assigned to issues.
 
  
 com.example.issuetracker
+ ├── config
  ├── controller
  ├── dto
  ├── dto.response
  ├── dto.UpdateRequest
  ├── entity
  ├── exception
+ ├── jwt
  ├── repository
  ├── response
+ ├── security
  ├── service
  └── serviceImpl
  
@@ -158,6 +218,47 @@ All API responses use a common response wrapper called `ApiResponse`.
 
 ---
 
+# Authentication & Authorization
+
+This project uses Spring Security with JWT-based stateless authentication.
+
+## Auth Flow
+
+ 
+Signup -> Login -> JWT Access Token -> Bearer Token -> Protected API
+ 
+
+## Authorization Header
+
+Protected APIs require the following HTTP header:
+
+ http
+Authorization: Bearer <accessToken>
+ 
+
+## Roles
+
+| Role | Description |
+|---|---|
+| USER | Basic authenticated user |
+| ADMIN | Administrator with access to user management or admin APIs |
+
+## Public APIs
+
+| Method | URL | Description |
+|---|---|---|
+| POST | `/api/auth/signup` | Sign up |
+| POST | `/api/auth/login` | Login |
+| GET | `/swagger-ui/**` | Swagger UI |
+| GET | `/v3/api-docs/**` | OpenAPI docs |
+| GET | `/actuator/health` | Health check |
+
+## Protected APIs
+
+Most project, issue, comment, and user-related APIs require a valid JWT access token.
+
+---
+
 # API Documentation
 
 ## Swagger / OpenAPI
@@ -178,21 +279,91 @@ http://localhost:8080/v3/api-docs
 
 # API Endpoints
 
+## Auth API
+
+| Method | URL | Auth Required | Description |
+|---|---|---|---|
+| POST | `/api/auth/signup` | No | Sign up |
+| POST | `/api/auth/login` | No | Login and receive JWT access token |
+
+### Signup
+
+ http
+POST /api/auth/signup
+ 
+
+Request body:
+
+ json
+{
+  "userId": "user01",
+  "password": "password1234",
+  "name": "John Doe",
+  "email": "john@example.com"
+}
+ 
+
+Response example:
+
+ json
+{
+  "success": true,
+  "message": "Signup successful.",
+  "data": {
+    "id": 1,
+    "userId": "user01",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "role": "USER"
+  }
+}
+ 
+
+### Login
+
+ http
+POST /api/auth/login
+ 
+
+Request body:
+
+ json
+{
+  "userId": "user01",
+  "password": "password1234"
+}
+ 
+
+Response example:
+
+ json
+{
+  "success": true,
+  "message": "Login successful.",
+  "data": {
+    "accessToken": "jwt-access-token"
+  }
+}
+ 
+
+---
+
 ## Project API
 
-| Method | URL | Description |
-|---|---|---|
-| POST | `/api/projects` | Create a project |
-| GET | `/api/projects` | Get all projects |
-| GET | `/api/projects/{projectId}` | Get a project by ID |
-| PUT | `/api/projects/{projectId}` | Update a project |
-| DELETE | `/api/projects/{projectId}` | Delete a project |
-| GET | `/api/projects/{projectId}/stats` | Get project issue statistics |
+| Method | URL | Auth Required | Role | Description |
+|---|---|---|---|---|
+| POST | `/api/projects` | Yes | USER, ADMIN | Create a project |
+| GET | `/api/projects` | Yes | USER, ADMIN | Get all projects |
+| GET | `/api/projects/{projectId}` | Yes | USER, ADMIN | Get a project by ID |
+| PUT | `/api/projects/{projectId}` | Yes | USER, ADMIN | Update a project |
+| DELETE | `/api/projects/{projectId}` | Yes | USER, ADMIN | Delete a project |
+| GET | `/api/projects/{projectId}/stats` | Yes | USER, ADMIN | Get project issue statistics |
 
 ### Create Project
 
  http
 POST /api/projects
+Authorization: Bearer <accessToken>
  
 
 Request body:
@@ -222,6 +393,7 @@ Response example:
 
  http
 GET /api/projects/{projectId}/stats
+Authorization: Bearer <accessToken>
  
 
 Response example:
@@ -245,22 +417,23 @@ Response example:
 
 ## Issue API
 
-| Method | URL | Description |
-|---|---|---|
-| POST | `/api/projects/{projectId}/issues` | Create an issue |
-| GET | `/api/projects/{projectId}/issues` | Get issues by project |
-| GET | `/api/issues/{issueId}` | Get an issue by ID |
-| PUT | `/api/issues/{issueId}` | Update an issue |
-| DELETE | `/api/issues/{issueId}` | Delete an issue |
-| GET | `/api/projects/{projectId}/issues/page` | Search, filter, paginate, and sort issues |
-| PATCH | `/api/issues/{issueId}/status` | Update issue status |
-| PATCH | `/api/issues/{issueId}/assignee` | Assign issue to user |
-| DELETE | `/api/issues/{issueId}/assignee` | Unassign issue from user |
+| Method | URL | Auth Required | Role | Description |
+|---|---|---|---|---|
+| POST | `/api/projects/{projectId}/issues` | Yes | USER, ADMIN | Create an issue |
+| GET | `/api/projects/{projectId}/issues` | Yes | USER, ADMIN | Get issues by project |
+| GET | `/api/issues/{issueId}` | Yes | USER, ADMIN | Get an issue by ID |
+| PUT | `/api/issues/{issueId}` | Yes | USER, ADMIN | Update an issue |
+| DELETE | `/api/issues/{issueId}` | Yes | USER, ADMIN | Delete an issue |
+| GET | `/api/projects/{projectId}/issues/page` | Yes | USER, ADMIN | Search, filter, paginate, and sort issues |
+| PATCH | `/api/issues/{issueId}/status` | Yes | USER, ADMIN | Update issue status |
+| PATCH | `/api/issues/{issueId}/assignee` | Yes | USER, ADMIN | Assign issue to user |
+| DELETE | `/api/issues/{issueId}/assignee` | Yes | USER, ADMIN | Unassign issue from user |
 
 ### Create Issue
 
  http
 POST /api/projects/{projectId}/issues
+Authorization: Bearer <accessToken>
  
 
 Request body:
@@ -278,6 +451,7 @@ Request body:
 
  http
 GET /api/projects/{projectId}/issues/page
+Authorization: Bearer <accessToken>
  
 
 Query parameter example:
@@ -296,6 +470,7 @@ GET /api/projects/1/issues/page?status=TODO&priority=HIGH&page=0&size=10&sortBy=
 
  http
 PATCH /api/issues/{issueId}/status
+Authorization: Bearer <accessToken>
  
 
 Request body:
@@ -318,6 +493,7 @@ DONE
 
  http
 PATCH /api/issues/{issueId}/assignee
+Authorization: Bearer <accessToken>
  
 
 Request body:
@@ -332,24 +508,26 @@ Request body:
 
  http
 DELETE /api/issues/{issueId}/assignee
+Authorization: Bearer <accessToken>
  
 
 ---
 
 ## Comment API
 
-| Method | URL | Description |
-|---|---|---|
-| POST | `/api/issues/{issueId}/comments` | Create a comment |
-| GET | `/api/issues/{issueId}/comments` | Get comments by issue |
-| GET | `/api/comments/{commentId}` | Get a comment by ID |
-| PUT | `/api/comments/{commentId}` | Update a comment |
-| DELETE | `/api/comments/{commentId}` | Delete a comment |
+| Method | URL | Auth Required | Role | Description |
+|---|---|---|---|---|
+| POST | `/api/issues/{issueId}/comments` | Yes | USER, ADMIN | Create a comment |
+| GET | `/api/issues/{issueId}/comments` | Yes | USER, ADMIN | Get comments by issue |
+| GET | `/api/comments/{commentId}` | Yes | USER, ADMIN | Get a comment by ID |
+| PUT | `/api/comments/{commentId}` | Yes | USER, ADMIN | Update a comment |
+| DELETE | `/api/comments/{commentId}` | Yes | USER, ADMIN | Delete a comment |
 
 ### Create Comment
 
  http
 POST /api/issues/{issueId}/comments
+Authorization: Bearer <accessToken>
  
 
 Request body:
@@ -364,6 +542,7 @@ Request body:
 
  http
 PUT /api/comments/{commentId}
+Authorization: Bearer <accessToken>
  
 
 Request body:
@@ -378,43 +557,46 @@ Request body:
 
 ## User API
 
-| Method | URL | Description |
-|---|---|---|
-| POST | `/api/users` | Create a user |
-| GET | `/api/users` | Get all users |
-| GET | `/api/users/{userId}` | Get a user by ID |
-| PUT | `/api/users/{userId}` | Update a user |
-| DELETE | `/api/users/{userId}` | Delete a user |
+User APIs are protected APIs.  
+For a production-like project, user management APIs should be restricted to ADMIN role.
 
-### Create User
+| Method | URL | Auth Required | Role | Description |
+|---|---|---|---|---|
+| GET | `/api/users` | Yes | ADMIN | Get all users |
+| GET | `/api/users/{userId}` | Yes | ADMIN | Get a user by ID |
+| PUT | `/api/users/{userId}` | Yes | ADMIN | Update a user |
+| DELETE | `/api/users/{userId}` | Yes | ADMIN | Delete a user |
 
- http
-POST /api/users
+> Note: Normal user registration should be handled through `/api/auth/signup`.
+
+---
+
+# Environment Variables
+
+This project separates environment-specific values using `.env`.
+
+## `.env.example`
+
+ env
+APP_PORT=8080
+
+MYSQL_DATABASE=issue_tracker
+MYSQL_ROOT_PASSWORD=root
+MYSQL_USER=issue_user
+MYSQL_PASSWORD=issue_password
+MYSQL_PORT=3307
+
+JWT_SECRET=replace-with-your-own-secret-key-at-least-32-characters
+JWT_EXPIRATION_MS=3600000
  
 
-Request body:
+## Important Notes
 
- json
-{
-  "name": "John Doe",
-  "email": "john@example.com"
-}
- 
-
-### Update User
-
- http
-PUT /api/users/{userId}
- 
-
-Request body:
-
- json
-{
-  "name": "John Updated",
-  "email": "john.updated@example.com"
-}
- 
+- Do not commit real `.env` files.
+- Commit `.env.example` only.
+- Use a long and secure `JWT_SECRET`.
+- Change database passwords for production.
+- `docker compose down -v` removes the MySQL volume and deletes all database data.
 
 ---
 
@@ -446,7 +628,7 @@ spring:
     name: issue-tracker-api
 
   datasource:
-    url: jdbc:mysql://localhost:3306/issue_tracker?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    url: jdbc:mysql://localhost:3306/issue_tracker?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&useSSL=false
     username: root
     password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -459,6 +641,10 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+jwt:
+  secret: ${JWT_SECRET:default-secret-key-default-secret-key-123456}
+  expiration-ms: ${JWT_EXPIRATION_MS:3600000}
 
 management:
   endpoints:
@@ -632,8 +818,6 @@ docker compose logs -f app
 | Item | Value |
 |---|---|
 | Database | `issue_tracker` |
-| Username | `root` |
-| Password | `root` |
 | MySQL Docker service | `mysql` |
 | MySQL container port | `3306` |
 | MySQL local port | `3307` |
@@ -680,41 +864,12 @@ Expected health response:
 }
  
 
-## API Test Example
-
-Create a project:
-
- http
-POST http://localhost:8080/api/projects
- 
-
-Request body:
-
- json
-{
-  "name": "Docker Compose Test Project",
-  "description": "Testing Spring Boot and MySQL with Docker Compose"
-}
- 
-
-Get projects:
-
- http
-GET http://localhost:8080/api/projects
- 
-
-If the created project remains after running the following commands, the MySQL volume is working correctly:
-
- bash
-docker compose down
-docker compose up -d
- 
-
 ---
 
 # Docker Only
 
-Docker Compose is recommended for normal local testing. This Docker-only option is useful when MySQL is already running on your local machine.
+Docker Compose is recommended for normal local testing.  
+This Docker-only option is useful when MySQL is already running on your local machine.
 
 ## Build Docker Image
 
@@ -728,16 +883,18 @@ When running the application inside a Docker container, use `host.docker.interna
 
  bash
 docker run --name issue-tracker-api-container -p 8080:8080 \
-  -e SPRING_DATASOURCE_URL="jdbc:mysql://host.docker.internal:3306/issue_tracker?serverTimezone=Asia/Seoul&characterEncoding=UTF-8" \
+  -e SPRING_DATASOURCE_URL="jdbc:mysql://host.docker.internal:3306/issue_tracker?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&useSSL=false" \
   -e SPRING_DATASOURCE_USERNAME="root" \
   -e SPRING_DATASOURCE_PASSWORD="root" \
+  -e JWT_SECRET="replace-with-your-own-secret-key-at-least-32-characters" \
+  -e JWT_EXPIRATION_MS="3600000" \
   issue-tracker-api:latest
  
 
 One-line command:
 
  bash
-docker run --name issue-tracker-api-container -p 8080:8080 -e SPRING_DATASOURCE_URL="jdbc:mysql://host.docker.internal:3306/issue_tracker?serverTimezone=Asia/Seoul&characterEncoding=UTF-8" -e SPRING_DATASOURCE_USERNAME="root" -e SPRING_DATASOURCE_PASSWORD="root" issue-tracker-api:latest
+docker run --name issue-tracker-api-container -p 8080:8080 -e SPRING_DATASOURCE_URL="jdbc:mysql://host.docker.internal:3306/issue_tracker?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&useSSL=false" -e SPRING_DATASOURCE_USERNAME="root" -e SPRING_DATASOURCE_PASSWORD="root" -e JWT_SECRET="replace-with-your-own-secret-key-at-least-32-characters" -e JWT_EXPIRATION_MS="3600000" issue-tracker-api:latest
  
 
 ## Docker Commands
@@ -839,12 +996,7 @@ The project uses MySQL `healthcheck` and `depends_on` to wait until MySQL is hea
 
 ## Access Denied for User Root
 
-Check that the MySQL password and Spring datasource password match:
-
- yaml
-MYSQL_ROOT_PASSWORD: root
-SPRING_DATASOURCE_PASSWORD: root
- 
+Check that the MySQL password and Spring datasource password match.
 
 If the MySQL volume was already created with a different password, reset the volume:
 
@@ -872,63 +1024,142 @@ docker compose up --build
 
 > Warning: this deletes the existing MySQL data.
 
+## Admin Account Reset After Removing Volume
+
+If you run:
+
+ bash
+docker compose down -v
+ 
+
+the MySQL volume is deleted, so all users and admin accounts are removed.
+
+For local development, create users again through `/api/auth/signup`.  
+For admin users, use your configured admin creation method or insert a local test admin account directly into the database only in a local development environment.
+
 ---
 
 # Recommended Postman Test Flow
 
-1. Create user
-2. Create project
-3. Create issue
-4. Assign issue to user
-5. Update issue status
-6. Create comment
-7. Get project statistics
-8. Test issue search, filtering, pagination, and sorting
-9. Test update APIs
-10. Test delete APIs
+Because most APIs are protected by JWT authentication, login should be tested first.
+
+## Test Flow
+
+1. Sign up
+2. Login
+3. Copy JWT access token
+4. Add `Authorization: Bearer <accessToken>` header
+5. Create project
+6. Create issue
+7. Assign issue to user
+8. Update issue status
+9. Create comment
+10. Get project statistics
+11. Test issue search, filtering, pagination, and sorting
+12. Test update APIs
+13. Test delete APIs
+14. Test protected API without token
+15. Test protected API with invalid token
+16. Test USER / ADMIN role authorization
 
 ## Test Flow Example
 
-### 1. Create User
+### 1. Sign Up
 
  http
-POST /api/users
+POST /api/auth/signup
  
 
-### 2. Create Project
+Request body:
+
+ json
+{
+  "userId": "user01",
+  "password": "password1234",
+  "name": "John Doe",
+  "email": "john@example.com"
+}
+ 
+
+### 2. Login
+
+ http
+POST /api/auth/login
+ 
+
+Request body:
+
+ json
+{
+  "userId": "user01",
+  "password": "password1234"
+}
+ 
+
+### 3. Set Authorization Header
+
+ http
+Authorization: Bearer <accessToken>
+ 
+
+### 4. Create Project
 
  http
 POST /api/projects
  
 
-### 3. Create Issue
+### 5. Create Issue
 
  http
 POST /api/projects/{projectId}/issues
  
 
-### 4. Assign Issue
+### 6. Assign Issue
 
  http
 PATCH /api/issues/{issueId}/assignee
  
 
-### 5. Update Issue Status
+### 7. Update Issue Status
 
  http
 PATCH /api/issues/{issueId}/status
  
 
-### 6. Create Comment
+### 8. Create Comment
 
  http
 POST /api/issues/{issueId}/comments
  
 
-### 7. Check Project Statistics
+### 9. Check Project Statistics
 
  http
 GET /api/projects/{projectId}/stats
+ 
+
+### 10. Test Unauthorized Request
+
+Call a protected API without token:
+
+ http
+GET /api/projects
+ 
+
+Expected result:
+
+ 
+401 Unauthorized
+ 
+
+### 11. Test Forbidden Request
+
+Call an ADMIN-only API with a USER token.
+
+Expected result:
+
+ 
+403 Forbidden
  
 
 ---
@@ -975,8 +1206,9 @@ Main tools:
 - MockMvc
 - `@WebMvcTest`
 - JSON response validation with `jsonPath`
+- Security test support
 
-These tests focus on verifying HTTP status codes, request mappings, validation behavior, and common API response structures using `ApiResponse.success(...)` and `ApiResponse.fail(...)`.
+These tests focus on verifying HTTP status codes, request mappings, validation behavior, common API response structures, and security-aware controller behavior.
 
 ## Running Tests
 
@@ -1002,21 +1234,69 @@ mvn test
 
 # CI
 
-This project uses GitHub Actions to run tests automatically.
+This project uses GitHub Actions to run automated checks.
 
-Workflow:
+Workflow file:
 
  
 .github/workflows/ci.yml
  
 
-Main command:
+The CI workflow verifies:
+
+- Source checkout
+- Java setup
+- Maven dependency resolution
+- Test execution
+- Application packaging
+- Docker image build
+
+Main commands:
 
  bash
 mvn -B test
+mvn -B package -DskipTests
+docker build -t issue-tracker-api:ci .
  
 
 The CI workflow runs automatically on push or pull request based on the workflow configuration.
+
+---
+
+# Deployment Plan
+
+The recommended deployment path for this project is:
+
+ 
+1. Local Docker Compose
+2. AWS Lightsail or low-cost VPS with Docker Compose
+3. Optional Kubernetes practice using k3s, Minikube, or cloud Kubernetes
+ 
+
+## Recommended First Deployment Target
+
+For portfolio purposes, deploying this project with Docker Compose on AWS Lightsail, EC2, or a low-cost VPS is recommended first.
+
+Reason:
+
+- The project already supports Docker Compose
+- Spring Boot app and MySQL can run together on one server
+- Deployment process is easier to explain
+- It is more realistic than jumping directly to Kubernetes
+- It demonstrates practical backend deployment experience
+
+## Kubernetes Plan
+
+Kubernetes can be added later as an advanced deployment step.
+
+Recommended Kubernetes learning path:
+
+ 
+1. Create Kubernetes manifests
+2. Run locally with Minikube or kind
+3. Try lightweight k3s on VPS
+4. Consider EKS only if needed
+ 
 
 ---
 
@@ -1036,10 +1316,22 @@ The CI workflow runs automatically on push or pull request based on the workflow
 - Global exception handling
 - Validation handling
 - REST-style API URL structure
+- Spring Security integration
+- BCrypt password encoding
+- User signup API
+- User login API
+- JWT access token generation
+- JWT authentication filter
+- Bearer Token based protected API access
+- USER / ADMIN role-based authorization
 - Postman testing
+- Docker Compose based Postman testing
 - Service layer unit tests
 - Controller web layer tests
+- Security-aware controller tests
 - GitHub Actions CI
+- GitHub Actions test verification
+- GitHub Actions Docker build verification
 - Swagger / OpenAPI documentation
 - Dockerfile
 - Docker image build verification
@@ -1047,6 +1339,7 @@ The CI workflow runs automatically on push or pull request based on the workflow
 - Docker Compose setup with Spring Boot and MySQL
 - MySQL volume persistence verification
 - Docker Compose restart verification
+- Environment variable separation with `.env` and `.env.example`
 
 ---
 
@@ -1054,24 +1347,30 @@ The CI workflow runs automatically on push or pull request based on the workflow
 
 ## Authentication and Authorization
 
-- Add Spring Security
-- Implement JWT authentication
-- Add user roles
+- Add refresh token support
+- Add logout or token blacklist
 - Add permission rules based on author or assignee
+- Add project member-based access control
+- Add stricter ADMIN-only user management policies
+- Add token expiration handling tests
 
 ## DevOps
 
-- Add Docker image build step to GitHub Actions
-- Practice Kubernetes deployment
-- Deploy to AWS or a low-cost server
-- Separate development and production environment settings when needed
-- Move secrets to environment variables or `.env` file for production-like usage
+- Deploy to AWS Lightsail, EC2, or a low-cost VPS
+- Add production deployment guide
+- Add HTTPS and domain configuration
+- Move production secrets to server environment variables or secret manager
+- Add Docker image push to Docker Hub or GitHub Container Registry
+- Practice Kubernetes deployment with k3s, Minikube, or cloud Kubernetes
 
 ## Documentation
 
 - Add ERD image
-- Improve request and response examples
-- Add deployment guide
+- Add architecture diagram image
+- Add Swagger Bearer Token usage guide
+- Add more request and response examples
+- Add deployment screenshots
+- Add troubleshooting examples based on real deployment errors
 
 ## Feature Expansion
 
@@ -1081,11 +1380,13 @@ The CI workflow runs automatically on push or pull request based on the workflow
 - Add file attachments
 - Add due date notification
 - Add project member management
+- Add issue labels or tags
+- Add dashboard summary API
 
 ---
 
 # Project Goal
 
-The goal of this project is to build a practical issue tracking REST API, starting from core CRUD features and gradually expanding into testing, Docker, CI/CD, and deployment.
+The goal of this project is to build a practical issue tracking REST API, starting from core CRUD features and gradually expanding into authentication, authorization, testing, Docker, CI/CD, and deployment.
 
-This project is designed to demonstrate backend development skills using Java, Spring Boot, JPA, MySQL, REST API design, validation, exception handling, testing, API documentation, Docker, Docker Compose, and layered architecture.
+This project is designed to demonstrate backend development skills using Java, Spring Boot, JPA, MySQL, REST API design, validation, exception handling, Spring Security, JWT, testing, API documentation, Docker, Docker Compose, GitHub Actions, and layered architecture.
