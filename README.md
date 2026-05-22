@@ -6,6 +6,32 @@ This project was built as a personal backend portfolio project. It focuses on RE
 
 ---
 
+## Table of Contents
+
+- [Tech Stack](#tech-stack)
+- [Project Overview](#project-overview)
+- [Main Features](#main-features)
+- [Architecture](#architecture)
+- [Entity Relationship Diagram](#entity-relationship-diagram)
+- [Package Structure](#package-structure)
+- [Authentication & Authorization](#authentication--authorization)
+- [API Documentation](#api-documentation)
+- [API Endpoints](#api-endpoints)
+- [Environment Variables](#environment-variables)
+- [How to Run Locally](#how-to-run-locally)
+- [Docker Compose](#docker-compose)
+- [Docker Only](#docker-only)
+- [Docker Troubleshooting](#docker-troubleshooting)
+- [Recommended Postman Test Flow](#recommended-postman-test-flow)
+- [Testing](#testing)
+- [CI](#ci)
+- [Deployment Plan](#deployment-plan)
+- [Completed Features](#completed-features)
+- [Future Improvements](#future-improvements)
+- [Project Goal](#project-goal)
+
+---
+
 ## Tech Stack
 
 | Category | Technology |
@@ -50,6 +76,7 @@ The project started with core CRUD functionality and was gradually expanded with
 - Stateless authentication
 - USER / ADMIN role support
 - Role-based authorization
+- Swagger Bearer Token authorization support
 
 ### Project
 
@@ -96,6 +123,7 @@ The project started with core CRUD functionality and was gradually expanded with
 - Validation handling
 - Global exception handling
 - Entity relationships
+- ERD documentation
 - REST-style URL design
 - Swagger / OpenAPI documentation
 - GitHub Actions CI
@@ -108,7 +136,7 @@ The project started with core CRUD functionality and was gradually expanded with
 
 ## Architecture
 
- 
+```text
 Client / Postman / Swagger UI
         |
         v
@@ -122,11 +150,11 @@ Repository Layer
         |
         v
 MySQL Database
- 
+```
 
 ### Authentication Flow
 
- 
+```text
 1. Client signs up or logs in
 2. Server validates user credentials
 3. Server returns JWT access token
@@ -134,57 +162,101 @@ MySQL Database
 5. JwtAuthenticationFilter validates the token
 6. SecurityContext is populated
 7. Protected API is executed based on user role
- 
+```
 
 ---
 
-## Entity Relationships
+## Entity Relationship Diagram
 
- 
+The ERD is also available as a separate document:
+
+- [ERD Documentation](./docs/erd.md)
+
+```mermaid
+erDiagram
+    USERS ||--o{ ISSUES : assigned_to
+    PROJECTS ||--o{ ISSUES : contains
+    ISSUES ||--o{ COMMENTS : has
+
+    USERS {
+        BIGINT id PK
+        VARCHAR user_id
+        VARCHAR password
+        VARCHAR name
+        VARCHAR email
+        VARCHAR role
+        DATETIME created_at
+        DATETIME updated_at
+    }
+
+    PROJECTS {
+        BIGINT id PK
+        VARCHAR name
+        TEXT description
+        DATETIME created_at
+        DATETIME updated_at
+    }
+
+    ISSUES {
+        BIGINT id PK
+        VARCHAR title
+        TEXT description
+        VARCHAR status
+        VARCHAR priority
+        DATE due_date
+        BIGINT project_id FK
+        BIGINT assignee_id FK
+        DATETIME created_at
+        DATETIME updated_at
+    }
+
+    COMMENTS {
+        BIGINT id PK
+        TEXT content
+        BIGINT issue_id FK
+        DATETIME created_at
+        DATETIME updated_at
+    }
+```
+
+### Entity Relationships
+
+```text
 Project 1 : N Issue
 Issue   N : 1 Project
 Issue   N : 1 User      // assignee
 Issue   1 : N Comment
 User    1 : N Issue
- 
+```
 
-### Project
+### Relationship Notes
 
-A project can have multiple issues.
-
-### Issue
-
-An issue belongs to one project.  
-An issue can also have one assigned user.
-
-### Comment
-
-A comment belongs to one issue.
-
-### User
-
-A user can be assigned to multiple issues.
+- A project can have multiple issues.
+- An issue belongs to one project.
+- An issue can have one assigned user.
+- A user can be assigned to multiple issues.
+- A comment belongs to one issue.
+- Issue author and comment author relationships are not included yet because they are planned as future improvements.
 
 ---
 
 ## Package Structure
 
- 
+```text
 com.example.issuetracker
  ├── config
  ├── controller
  ├── dto
+ ├── dto.request
  ├── dto.response
- ├── dto.UpdateRequest
  ├── entity
  ├── exception
- ├── jwt
  ├── repository
  ├── response
  ├── security
  ├── service
  └── serviceImpl
- 
+```
 
 ---
 
@@ -194,7 +266,7 @@ All API responses use a common response wrapper called `ApiResponse`.
 
 ### Success Response Example
 
- json
+```json
 {
   "success": true,
   "message": "Project created successfully.",
@@ -204,17 +276,17 @@ All API responses use a common response wrapper called `ApiResponse`.
     "description": "Issue tracker project"
   }
 }
- 
+```
 
 ### Error Response Example
 
- json
+```json
 {
   "success": false,
   "message": "Project not found.",
   "data": null
 }
- 
+```
 
 ---
 
@@ -224,17 +296,17 @@ This project uses Spring Security with JWT-based stateless authentication.
 
 ## Auth Flow
 
- 
+```text
 Signup -> Login -> JWT Access Token -> Bearer Token -> Protected API
- 
+```
 
 ## Authorization Header
 
 Protected APIs require the following HTTP header:
 
- http
+```http
 Authorization: Bearer <accessToken>
- 
+```
 
 ## Roles
 
@@ -257,6 +329,14 @@ Authorization: Bearer <accessToken>
 
 Most project, issue, comment, and user-related APIs require a valid JWT access token.
 
+| Token / Role | Result |
+|---|---|
+| No token | `401 Unauthorized` |
+| Invalid or expired token | `401 Unauthorized` |
+| USER token | Can access normal protected APIs |
+| USER token on ADMIN API | `403 Forbidden` |
+| ADMIN token | Can access user management APIs |
+
 ---
 
 # API Documentation
@@ -265,15 +345,43 @@ Most project, issue, comment, and user-related APIs require a valid JWT access t
 
 Swagger UI:
 
- 
+```text
 http://localhost:8080/swagger-ui/index.html
- 
+```
 
 OpenAPI JSON:
 
- 
+```text
 http://localhost:8080/v3/api-docs
- 
+```
+
+## Swagger JWT Authorization
+
+Swagger UI supports JWT Bearer authentication.
+
+### How to Use
+
+1. Create a user using `/api/auth/signup`.
+2. Login using `/api/auth/login`.
+3. Copy the `accessToken` from the login response.
+4. Click the **Authorize** button in Swagger UI.
+5. Paste the token value.
+6. Call protected APIs from Swagger UI.
+
+Swagger will automatically send the following header for protected API requests:
+
+```http
+Authorization: Bearer <accessToken>
+```
+
+### Authorization Test Cases
+
+| Test Case | Expected Result |
+|---|---|
+| Call protected API without token | `401 Unauthorized` |
+| Call protected API with valid USER token | Success |
+| Call ADMIN API with USER token | `403 Forbidden` |
+| Call ADMIN API with ADMIN token | Success |
 
 ---
 
@@ -288,24 +396,24 @@ http://localhost:8080/v3/api-docs
 
 ### Signup
 
- http
+```http
 POST /api/auth/signup
- 
+```
 
 Request body:
 
- json
+```json
 {
   "userId": "user01",
   "password": "password1234",
   "name": "John Doe",
   "email": "john@example.com"
 }
- 
+```
 
 Response example:
 
- json
+```json
 {
   "success": true,
   "message": "Signup successful.",
@@ -317,26 +425,26 @@ Response example:
     "role": "USER"
   }
 }
- 
+```
 
 ### Login
 
- http
+```http
 POST /api/auth/login
- 
+```
 
 Request body:
 
- json
+```json
 {
   "userId": "user01",
   "password": "password1234"
 }
- 
+```
 
 Response example:
 
- json
+```json
 {
   "success": true,
   "message": "Login successful.",
@@ -344,7 +452,7 @@ Response example:
     "accessToken": "jwt-access-token"
   }
 }
- 
+```
 
 ---
 
@@ -361,23 +469,23 @@ Response example:
 
 ### Create Project
 
- http
+```http
 POST /api/projects
 Authorization: Bearer <accessToken>
- 
+```
 
 Request body:
 
- json
+```json
 {
   "name": "Issue Tracker",
   "description": "Issue tracker REST API project"
 }
- 
+```
 
 Response example:
 
- json
+```json
 {
   "success": true,
   "message": "Project created successfully.",
@@ -387,18 +495,18 @@ Response example:
     "description": "Issue tracker REST API project"
   }
 }
- 
+```
 
 ### Get Project Statistics
 
- http
+```http
 GET /api/projects/{projectId}/stats
 Authorization: Bearer <accessToken>
- 
+```
 
 Response example:
 
- json
+```json
 {
   "success": true,
   "message": "Project stats retrieved successfully.",
@@ -411,7 +519,7 @@ Response example:
     "doneCount": 3
   }
 }
- 
+```
 
 ---
 
@@ -431,85 +539,85 @@ Response example:
 
 ### Create Issue
 
- http
+```http
 POST /api/projects/{projectId}/issues
 Authorization: Bearer <accessToken>
- 
+```
 
 Request body:
 
- json
+```json
 {
   "title": "Login API bug",
   "description": "Login API returns 500 error",
   "priority": "HIGH",
   "dueDate": "2026-06-30"
 }
- 
+```
 
 ### Search, Filter, Paginate, and Sort Issues
 
- http
+```http
 GET /api/projects/{projectId}/issues/page
 Authorization: Bearer <accessToken>
- 
+```
 
 Query parameter example:
 
- http
+```http
 GET /api/projects/1/issues/page?page=0&size=10&sortBy=id&direction=desc
- 
+```
 
 Filter example:
 
- http
+```http
 GET /api/projects/1/issues/page?status=TODO&priority=HIGH&page=0&size=10&sortBy=id&direction=desc
- 
+```
 
 ### Update Issue Status
 
- http
+```http
 PATCH /api/issues/{issueId}/status
 Authorization: Bearer <accessToken>
- 
+```
 
 Request body:
 
- json
+```json
 {
   "status": "IN_PROGRESS"
 }
- 
+```
 
 Available status values:
 
- 
+```text
 TODO
 IN_PROGRESS
 DONE
- 
+```
 
 ### Assign Issue to User
 
- http
+```http
 PATCH /api/issues/{issueId}/assignee
 Authorization: Bearer <accessToken>
- 
+```
 
 Request body:
 
- json
+```json
 {
   "userId": 1
 }
- 
+```
 
 ### Unassign Issue from User
 
- http
+```http
 DELETE /api/issues/{issueId}/assignee
 Authorization: Bearer <accessToken>
- 
+```
 
 ---
 
@@ -525,33 +633,33 @@ Authorization: Bearer <accessToken>
 
 ### Create Comment
 
- http
+```http
 POST /api/issues/{issueId}/comments
 Authorization: Bearer <accessToken>
- 
+```
 
 Request body:
 
- json
+```json
 {
   "content": "This issue needs to be fixed first."
 }
- 
+```
 
 ### Update Comment
 
- http
+```http
 PUT /api/comments/{commentId}
 Authorization: Bearer <accessToken>
- 
+```
 
 Request body:
 
- json
+```json
 {
   "content": "Updated comment content."
 }
- 
+```
 
 ---
 
@@ -577,7 +685,7 @@ This project separates environment-specific values using `.env`.
 
 ## `.env.example`
 
- env
+```env
 APP_PORT=8080
 
 MYSQL_DATABASE=issue_tracker
@@ -588,7 +696,7 @@ MYSQL_PORT=3307
 
 JWT_SECRET=replace-with-your-own-secret-key-at-least-32-characters
 JWT_EXPIRATION_MS=3600000
- 
+```
 
 ## Important Notes
 
@@ -604,22 +712,22 @@ JWT_EXPIRATION_MS=3600000
 
 ## 1. Clone the Repository
 
- bash
+```bash
 git clone https://github.com/your-username/issue-tracker-api.git
 cd issue-tracker-api
- 
+```
 
 ## 2. Create MySQL Database
 
- sql
+```sql
 CREATE DATABASE issue_tracker;
- 
+```
 
 ## 3. Configure Database Settings
 
 Example `application.yml`:
 
- yaml
+```yaml
 server:
   port: 8080
 
@@ -654,7 +762,7 @@ management:
   endpoint:
     health:
       show-details: always
- 
+```
 
 Update `username`, `password`, and database name based on your local MySQL environment.
 
@@ -662,53 +770,53 @@ Update `username`, `password`, and database name based on your local MySQL envir
 
 Using Maven Wrapper:
 
- bash
+```bash
 ./mvnw spring-boot:run
- 
+```
 
 On Windows:
 
- bash
+```bash
 mvnw.cmd spring-boot:run
- 
+```
 
 Or using local Maven:
 
- bash
+```bash
 mvn spring-boot:run
- 
+```
 
 Or run the main class from your IDE:
 
- 
+```text
 IssueTrackerApiApplication.java
- 
+```
 
 ## 5. Check Server Status
 
 Base URL:
 
- 
+```text
 http://localhost:8080
- 
+```
 
 Actuator health check:
 
- http
+```http
 GET /actuator/health
- 
+```
 
 Swagger UI:
 
- 
+```text
 http://localhost:8080/swagger-ui/index.html
- 
+```
 
 OpenAPI JSON:
 
- 
+```text
 http://localhost:8080/v3/api-docs
- 
+```
 
 ---
 
@@ -733,85 +841,85 @@ Docker Compose starts:
 
 The application connects to MySQL using the Docker Compose service name:
 
- 
+```text
 jdbc:mysql://mysql:3306/issue_tracker
- 
+```
 
 The MySQL container is exposed to the local machine on port `3307` to avoid conflicts with a locally installed MySQL server.
 
- 
+```text
 Local MySQL access: localhost:3307
 Docker network access: mysql:3306
- 
+```
 
 ## Start Containers
 
 Build and start containers:
 
- bash
+```bash
 docker compose up --build
- 
+```
 
 Start containers in detached mode:
 
- bash
+```bash
 docker compose up -d --build
- 
+```
 
 ## Stop Containers
 
 Stop and remove containers:
 
- bash
+```bash
 docker compose down
- 
+```
 
 Stop containers and remove the MySQL volume:
 
- bash
+```bash
 docker compose down -v
- 
+```
 
 > Warning: `docker compose down -v` removes the MySQL volume and deletes all persisted database data.
 
 ## Check Running Containers
 
- bash
+```bash
 docker ps
- 
+```
 
 Expected containers:
 
- 
+```text
 issue-tracker-api-app-1
 issue-tracker-api-mysql-1
- 
+```
 
 ## Check Logs
 
 Check all logs:
 
- bash
+```bash
 docker compose logs
- 
+```
 
 Check application logs:
 
- bash
+```bash
 docker compose logs app
- 
+```
 
 Check MySQL logs:
 
- bash
+```bash
 docker compose logs mysql
- 
+```
 
 Follow application logs:
 
- bash
+```bash
 docker compose logs -f app
- 
+```
 
 ## Database Information
 
@@ -828,41 +936,41 @@ docker compose logs -f app
 
 For tools like MySQL Workbench or DBeaver:
 
- 
+```text
 Host: localhost
 Port: 3307
 Username: root
 Password: root
 Database: issue_tracker
- 
+```
 
 ## Verify Application
 
 Swagger UI:
 
- 
+```text
 http://localhost:8080/swagger-ui/index.html
- 
+```
 
 OpenAPI Docs:
 
- 
+```text
 http://localhost:8080/v3/api-docs
- 
+```
 
 Actuator Health:
 
- 
+```text
 http://localhost:8080/actuator/health
- 
+```
 
 Expected health response:
 
- json
+```json
 {
   "status": "UP"
 }
- 
+```
 
 ---
 
@@ -873,15 +981,15 @@ This Docker-only option is useful when MySQL is already running on your local ma
 
 ## Build Docker Image
 
- bash
+```bash
 docker build -t issue-tracker-api:latest .
- 
+```
 
 ## Run Docker Container with Local MySQL
 
 When running the application inside a Docker container, use `host.docker.internal` instead of `localhost` to connect to MySQL running on your local machine.
 
- bash
+```bash
 docker run --name issue-tracker-api-container -p 8080:8080 \
   -e SPRING_DATASOURCE_URL="jdbc:mysql://host.docker.internal:3306/issue_tracker?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&useSSL=false" \
   -e SPRING_DATASOURCE_USERNAME="root" \
@@ -889,57 +997,57 @@ docker run --name issue-tracker-api-container -p 8080:8080 \
   -e JWT_SECRET="replace-with-your-own-secret-key-at-least-32-characters" \
   -e JWT_EXPIRATION_MS="3600000" \
   issue-tracker-api:latest
- 
+```
 
 One-line command:
 
- bash
+```bash
 docker run --name issue-tracker-api-container -p 8080:8080 -e SPRING_DATASOURCE_URL="jdbc:mysql://host.docker.internal:3306/issue_tracker?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&useSSL=false" -e SPRING_DATASOURCE_USERNAME="root" -e SPRING_DATASOURCE_PASSWORD="root" -e JWT_SECRET="replace-with-your-own-secret-key-at-least-32-characters" -e JWT_EXPIRATION_MS="3600000" issue-tracker-api:latest
- 
+```
 
 ## Docker Commands
 
 Check running containers:
 
- bash
+```bash
 docker ps
- 
+```
 
 Check all containers:
 
- bash
+```bash
 docker ps -a
- 
+```
 
 Stop the container:
 
- bash
+```bash
 docker stop issue-tracker-api-container
- 
+```
 
 Start the container again:
 
- bash
+```bash
 docker start issue-tracker-api-container
- 
+```
 
 View logs:
 
- bash
+```bash
 docker logs -f issue-tracker-api-container
- 
+```
 
 Remove the container:
 
- bash
+```bash
 docker rm issue-tracker-api-container
- 
+```
 
 Force remove the container:
 
- bash
+```bash
 docker rm -f issue-tracker-api-container
- 
+```
 
 ---
 
@@ -949,22 +1057,22 @@ docker rm -f issue-tracker-api-container
 
 If MySQL is already running on the local machine, Docker may fail with:
 
- 
+```text
 ports are not available: exposing port TCP 0.0.0.0:3306
- 
+```
 
 This project uses local port `3307` for the MySQL container:
 
- yaml
+```yaml
 ports:
   - "3307:3306"
- 
+```
 
 The Spring Boot application still uses the Docker Compose service name and container port:
 
- 
+```text
 jdbc:mysql://mysql:3306/issue_tracker
- 
+```
 
 This is because containers communicate through the Docker Compose network.
 
@@ -972,21 +1080,21 @@ This is because containers communicate through the Docker Compose network.
 
 Check running containers:
 
- bash
+```bash
 docker ps
- 
+```
 
 Remove an old standalone container if needed:
 
- bash
+```bash
 docker rm -f issue-tracker-api-container
- 
+```
 
 Or stop Docker Compose containers:
 
- bash
+```bash
 docker compose down
- 
+```
 
 ## MySQL Connection Refused
 
@@ -1000,10 +1108,10 @@ Check that the MySQL password and Spring datasource password match.
 
 If the MySQL volume was already created with a different password, reset the volume:
 
- bash
+```bash
 docker compose down -v
 docker compose up --build
- 
+```
 
 > Warning: this deletes the existing MySQL data.
 
@@ -1011,16 +1119,16 @@ docker compose up --build
 
 Check that the compose file contains:
 
- yaml
+```yaml
 MYSQL_DATABASE: issue_tracker
- 
+```
 
 If the database was not created correctly during the first initialization, reset the volume:
 
- bash
+```bash
 docker compose down -v
 docker compose up --build
- 
+```
 
 > Warning: this deletes the existing MySQL data.
 
@@ -1028,9 +1136,9 @@ docker compose up --build
 
 If you run:
 
- bash
+```bash
 docker compose down -v
- 
+```
 
 the MySQL volume is deleted, so all users and admin accounts are removed.
 
@@ -1066,91 +1174,91 @@ Because most APIs are protected by JWT authentication, login should be tested fi
 
 ### 1. Sign Up
 
- http
+```http
 POST /api/auth/signup
- 
+```
 
 Request body:
 
- json
+```json
 {
   "userId": "user01",
   "password": "password1234",
   "name": "John Doe",
   "email": "john@example.com"
 }
- 
+```
 
 ### 2. Login
 
- http
+```http
 POST /api/auth/login
- 
+```
 
 Request body:
 
- json
+```json
 {
   "userId": "user01",
   "password": "password1234"
 }
- 
+```
 
 ### 3. Set Authorization Header
 
- http
+```http
 Authorization: Bearer <accessToken>
- 
+```
 
 ### 4. Create Project
 
- http
+```http
 POST /api/projects
- 
+```
 
 ### 5. Create Issue
 
- http
+```http
 POST /api/projects/{projectId}/issues
- 
+```
 
 ### 6. Assign Issue
 
- http
+```http
 PATCH /api/issues/{issueId}/assignee
- 
+```
 
 ### 7. Update Issue Status
 
- http
+```http
 PATCH /api/issues/{issueId}/status
- 
+```
 
 ### 8. Create Comment
 
- http
+```http
 POST /api/issues/{issueId}/comments
- 
+```
 
 ### 9. Check Project Statistics
 
- http
+```http
 GET /api/projects/{projectId}/stats
- 
+```
 
 ### 10. Test Unauthorized Request
 
 Call a protected API without token:
 
- http
+```http
 GET /api/projects
- 
+```
 
 Expected result:
 
- 
+```text
 401 Unauthorized
- 
+```
 
 ### 11. Test Forbidden Request
 
@@ -1158,15 +1266,15 @@ Call an ADMIN-only API with a USER token.
 
 Expected result:
 
- 
+```text
 403 Forbidden
- 
+```
 
 ---
 
 # Testing
 
-This project includes both Service Layer Unit Tests and Controller Web Layer Tests.
+This project includes Service Layer Unit Tests, Controller Web Layer Tests, authentication tests, and authorization tests.
 
 ## Service Layer Unit Tests
 
@@ -1178,6 +1286,7 @@ Tested classes:
 - `UserServiceImplTest`
 - `CommentServiceImplTest`
 - `IssueServiceImplTest`
+- `AuthServiceImplTest`
 
 Main tools:
 
@@ -1186,7 +1295,7 @@ Main tools:
 - `@ExtendWith(MockitoExtension.class)`
 - Mocked repository dependencies
 
-These tests focus on validating service logic such as creating, updating, deleting, finding resources, assigning users to issues, and handling not-found cases.
+These tests focus on validating service logic such as creating, updating, deleting, finding resources, assigning users to issues, authentication, password encoding, JWT token generation, and handling not-found or invalid-credential cases.
 
 ## Controller Web Layer Tests
 
@@ -1198,6 +1307,8 @@ Tested classes:
 - `UserControllerTest`
 - `CommentControllerTest`
 - `IssueControllerTest`
+- `AuthControllerTest`
+- `SecurityAuthorizationTest`
 
 Main tools:
 
@@ -1206,29 +1317,29 @@ Main tools:
 - MockMvc
 - `@WebMvcTest`
 - JSON response validation with `jsonPath`
-- Security test support
+- Spring Security test support
 
-These tests focus on verifying HTTP status codes, request mappings, validation behavior, common API response structures, and security-aware controller behavior.
+These tests focus on verifying HTTP status codes, request mappings, validation behavior, common API response structures, authentication behavior, authorization behavior, and security-aware controller behavior.
 
 ## Running Tests
 
 Run all tests:
 
- bash
+```bash
 ./mvnw test
- 
+```
 
 On Windows:
 
- bash
+```bash
 mvnw.cmd test
- 
+```
 
 Or using local Maven:
 
- bash
+```bash
 mvn test
- 
+```
 
 ---
 
@@ -1238,9 +1349,9 @@ This project uses GitHub Actions to run automated checks.
 
 Workflow file:
 
- 
+```text
 .github/workflows/ci.yml
- 
+```
 
 The CI workflow verifies:
 
@@ -1253,11 +1364,11 @@ The CI workflow verifies:
 
 Main commands:
 
- bash
+```bash
 mvn -B test
 mvn -B package -DskipTests
 docker build -t issue-tracker-api:ci .
- 
+```
 
 The CI workflow runs automatically on push or pull request based on the workflow configuration.
 
@@ -1267,11 +1378,11 @@ The CI workflow runs automatically on push or pull request based on the workflow
 
 The recommended deployment path for this project is:
 
- 
+```text
 1. Local Docker Compose
 2. AWS Lightsail or low-cost VPS with Docker Compose
 3. Optional Kubernetes practice using k3s, Minikube, or cloud Kubernetes
- 
+```
 
 ## Recommended First Deployment Target
 
@@ -1291,12 +1402,12 @@ Kubernetes can be added later as an advanced deployment step.
 
 Recommended Kubernetes learning path:
 
- 
+```text
 1. Create Kubernetes manifests
 2. Run locally with Minikube or kind
 3. Try lightweight k3s on VPS
 4. Consider EKS only if needed
- 
+```
 
 ---
 
@@ -1324,15 +1435,21 @@ Recommended Kubernetes learning path:
 - JWT authentication filter
 - Bearer Token based protected API access
 - USER / ADMIN role-based authorization
+- Login failure handling with `401 Unauthorized`
+- Swagger / OpenAPI documentation
+- Swagger Bearer Token authentication support
+- ERD documentation
 - Postman testing
 - Docker Compose based Postman testing
 - Service layer unit tests
 - Controller web layer tests
 - Security-aware controller tests
+- Auth service tests
+- Auth controller tests
+- Authorization tests
 - GitHub Actions CI
 - GitHub Actions test verification
 - GitHub Actions Docker build verification
-- Swagger / OpenAPI documentation
 - Dockerfile
 - Docker image build verification
 - Docker container run verification
@@ -1351,7 +1468,6 @@ Recommended Kubernetes learning path:
 - Add logout or token blacklist
 - Add permission rules based on author or assignee
 - Add project member-based access control
-- Add stricter ADMIN-only user management policies
 - Add token expiration handling tests
 
 ## DevOps
@@ -1365,9 +1481,7 @@ Recommended Kubernetes learning path:
 
 ## Documentation
 
-- Add ERD image
 - Add architecture diagram image
-- Add Swagger Bearer Token usage guide
 - Add more request and response examples
 - Add deployment screenshots
 - Add troubleshooting examples based on real deployment errors
