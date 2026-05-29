@@ -7,11 +7,17 @@ import com.example.issuetracker.dto.response.ProjectStatsResponse;
 import com.example.issuetracker.entity.IssuePriority;
 import com.example.issuetracker.entity.IssueStatus;
 import com.example.issuetracker.entity.Project;
+import com.example.issuetracker.entity.ProjectMember;
+import com.example.issuetracker.entity.User;
 import com.example.issuetracker.exception.ResourceNotFoundException;
 import com.example.issuetracker.repository.CommentRepository;
 import com.example.issuetracker.repository.IssueRepository;
+import com.example.issuetracker.repository.ProjectMemberRepository;
 import com.example.issuetracker.repository.ProjectRepository;
+import com.example.issuetracker.security.CurrentUserProvider;
 import com.example.issuetracker.service.ProjectService;
+
+import jakarta.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,95 +27,104 @@ import java.util.List;
 @Service
 public class ProjectServiceImpl implements ProjectService {
 
-    @Autowired
-    private ProjectRepository repo;
-    
-    @Autowired
-    private IssueRepository issueRepo;
+	@Autowired
+	private ProjectRepository repo;
 
-    @Autowired
-    private CommentRepository commentRepo;
+	@Autowired
+	private IssueRepository issueRepo;
 
-    @Override
-    public ProjectResponse createProject(ProjectCreateRequest request) {
-        Project project = new Project(
-                request.getName(),
-                request.getDescription()
-        );
+	@Autowired
+	private CommentRepository commentRepo;
+	@Autowired
+	private ProjectMemberRepository projectMemberRepository;
 
-        Project savedProject = repo.save(project);
+	@Autowired
+	private CurrentUserProvider currentUserProvider;
 
-        return new ProjectResponse(savedProject);
-    }
+	@Autowired
+	private ProjectAuthorizationService projectAuthorizationService;
 
-    @Override
-    public List<ProjectResponse> getProjects() {
-        return repo.findAll()
-                .stream()
-                .map(ProjectResponse::new)
-                .toList();
-    }
+	@Transactional
+	@Override
+	public ProjectResponse createProject(ProjectCreateRequest request) {
+		User currentUser = currentUserProvider.getCurrentUser();
 
-    @Override
-    public ProjectResponse getProject(Long projectId) {
-        Project project = repo.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found. id=" + projectId));
+		Project project = new Project(request.getName(), request.getDescription());
+		Project savedProject = repo.save(project);
 
-        return new ProjectResponse(project);
-    }
+		projectMemberRepository.save(ProjectMember.owner(savedProject, currentUser));
 
-    @Override
-    public ProjectResponse updateProject(Long projectId, ProjectUpdateRequest request) {
-        Project project = repo.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found. id=" + projectId));
+		return new ProjectResponse(savedProject);
+	}
 
-        project.update(
-                request.getName(),
-                request.getDescription(),
-                request.getStatus()
-        );
+	@Override
+	public List<ProjectResponse> getProjects() {
+		if (currentUserProvider.isAdmin()) {
+			return repo.findAll().stream().map(ProjectResponse::new).toList();
+		}
 
-        Project updatedProject = repo.save(project);
+		Long currentUserId = currentUserProvider.getCurrentUserId();
 
-        return new ProjectResponse(updatedProject);
-    }
+		return projectMemberRepository.findAllByUser_Id(currentUserId).stream().map(ProjectMember::getProject)
+				.map(ProjectResponse::new).toList();
+	}
 
-    @Override
-    public void deleteProject(Long projectId) {
-        Project project = repo.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found. id=" + projectId));
+	@Override
+	public ProjectResponse getProject(Long projectId) {
+		projectAuthorizationService.requireProjectMember(projectId);
 
-        repo.delete(project);
-    }
+		Project project = repo.findById(projectId)
+				.orElseThrow(() -> new ResourceNotFoundException("Project not found. id=" + projectId));
 
-    @Override
-    public ProjectStatsResponse getProjectStats(Long projectId) {
-        Project project = repo.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found. id=" + projectId));
+		return new ProjectResponse(project);
+	}
 
-        long totalIssues = issueRepo.countByProject_Id(projectId);
+	@Override
+	public ProjectResponse updateProject(Long projectId, ProjectUpdateRequest request) {
+	    projectAuthorizationService.requireProjectOwner(projectId);
 
-        long todoCount = issueRepo.countByProject_IdAndStatus(projectId, IssueStatus.TODO);
-        long inProgressCount = issueRepo.countByProject_IdAndStatus(projectId, IssueStatus.IN_PROGRESS);
-        long doneCount = issueRepo.countByProject_IdAndStatus(projectId, IssueStatus.DONE);
+	    Project project = repo.findById(projectId)
+	            .orElseThrow(() -> new ResourceNotFoundException("Project not found. id=" + projectId));
 
-        long highPriorityCount = issueRepo.countByProject_IdAndPriority(projectId, IssuePriority.HIGH);
-        long mediumPriorityCount = issueRepo.countByProject_IdAndPriority(projectId, IssuePriority.MEDIUM);
-        long lowPriorityCount = issueRepo.countByProject_IdAndPriority(projectId, IssuePriority.LOW);
+	    project.update(
+	            request.getName(),
+	            request.getDescription(),
+	            request.getStatus()
+	    );
 
-        long totalComments = commentRepo.countByIssue_Project_Id(projectId);
+	    Project updatedProject = repo.save(project);
 
-        return new ProjectStatsResponse(
-                project.getId(),
-                project.getName(),
-                totalIssues,
-                todoCount,
-                inProgressCount,
-                doneCount,
-                highPriorityCount,
-                mediumPriorityCount,
-                lowPriorityCount,
-                totalComments
-        );
-    }
+	    return new ProjectResponse(updatedProject);
+	}
+
+	@Override
+	public void deleteProject(Long projectId) {
+	    projectAuthorizationService.requireProjectOwner(projectId);
+
+	    Project project = repo.findById(projectId)
+	            .orElseThrow(() -> new ResourceNotFoundException("Project not found. id=" + projectId));
+
+	    repo.delete(project);
+	}
+	@Override
+	public ProjectStatsResponse getProjectStats(Long projectId) {
+		  projectAuthorizationService.requireProjectMember(projectId);
+		Project project = repo.findById(projectId)
+				.orElseThrow(() -> new ResourceNotFoundException("Project not found. id=" + projectId));
+
+		long totalIssues = issueRepo.countByProject_Id(projectId);
+
+		long todoCount = issueRepo.countByProject_IdAndStatus(projectId, IssueStatus.TODO);
+		long inProgressCount = issueRepo.countByProject_IdAndStatus(projectId, IssueStatus.IN_PROGRESS);
+		long doneCount = issueRepo.countByProject_IdAndStatus(projectId, IssueStatus.DONE);
+
+		long highPriorityCount = issueRepo.countByProject_IdAndPriority(projectId, IssuePriority.HIGH);
+		long mediumPriorityCount = issueRepo.countByProject_IdAndPriority(projectId, IssuePriority.MEDIUM);
+		long lowPriorityCount = issueRepo.countByProject_IdAndPriority(projectId, IssuePriority.LOW);
+
+		long totalComments = commentRepo.countByIssue_Project_Id(projectId);
+
+		return new ProjectStatsResponse(project.getId(), project.getName(), totalIssues, todoCount, inProgressCount,
+				doneCount, highPriorityCount, mediumPriorityCount, lowPriorityCount, totalComments);
+	}
 }

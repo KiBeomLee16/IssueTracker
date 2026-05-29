@@ -35,7 +35,9 @@ import com.example.issuetracker.exception.ResourceNotFoundException;
 import com.example.issuetracker.repository.IssueRepository;
 import com.example.issuetracker.repository.ProjectRepository;
 import com.example.issuetracker.repository.UserRepository;
+import com.example.issuetracker.security.CurrentUserProvider;
 import com.example.issuetracker.serviceImpl.IssueServiceImpl;
+import com.example.issuetracker.serviceImpl.ProjectAuthorizationService;
 
 @ExtendWith(MockitoExtension.class)
 class IssueServiceImplTest {
@@ -51,6 +53,11 @@ class IssueServiceImplTest {
 
     @InjectMocks
     private IssueServiceImpl issueService;
+    @Mock
+    private CurrentUserProvider currentUserProvider;
+
+    @Mock
+    private ProjectAuthorizationService projectAuthorizationService;
 
     private Project project;
     private Issue issue;
@@ -97,7 +104,7 @@ class IssueServiceImplTest {
             ReflectionTestUtils.setField(savedIssue, "id", 1L);
             return savedIssue;
         });
-
+        when(currentUserProvider.getCurrentUser()).thenReturn(user);
         // when
         IssueResponse response = issueService.createIssue(1L, request);
 

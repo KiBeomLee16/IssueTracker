@@ -22,9 +22,15 @@ import com.example.issuetracker.dto.UpdateRequest.ProjectUpdateRequest;
 import com.example.issuetracker.dto.request.ProjectCreateRequest;
 import com.example.issuetracker.dto.response.ProjectResponse;
 	import com.example.issuetracker.entity.Project;
-	import com.example.issuetracker.exception.ResourceNotFoundException;
-	import com.example.issuetracker.repository.ProjectRepository;
-	import com.example.issuetracker.serviceImpl.ProjectServiceImpl;
+import com.example.issuetracker.entity.ProjectMember;
+import com.example.issuetracker.entity.User;
+import com.example.issuetracker.entity.UserRole;
+import com.example.issuetracker.exception.ResourceNotFoundException;
+import com.example.issuetracker.repository.ProjectMemberRepository;
+import com.example.issuetracker.repository.ProjectRepository;
+import com.example.issuetracker.security.CurrentUserProvider;
+import com.example.issuetracker.serviceImpl.ProjectAuthorizationService;
+import com.example.issuetracker.serviceImpl.ProjectServiceImpl;
 	
 	@ExtendWith(MockitoExtension.class)
 	public class ProjectServiceImplTest {
@@ -36,7 +42,16 @@ import com.example.issuetracker.dto.response.ProjectResponse;
 	    private ProjectServiceImpl projectService;
 	
 	    private Project project;
-	
+	    
+	    @Mock
+	    private CurrentUserProvider currentUserProvider;
+
+	    @Mock
+	    private ProjectMemberRepository projectMemberRepository;
+	    
+	    @Mock
+	    private ProjectAuthorizationService projectAuthorizationService;
+	    private User user;
 	    @BeforeEach
 	    void setUp() {
 	        project = new Project();
@@ -44,6 +59,8 @@ import com.example.issuetracker.dto.response.ProjectResponse;
 	        ReflectionTestUtils.setField(project, "id", 1L);
 	        ReflectionTestUtils.setField(project, "name", "Issue Tracker");
 	        ReflectionTestUtils.setField(project, "description", "Issue tracker project");
+	        user = new User("John", "john@example.com", "john01", "password", UserRole.ADMIN);
+	        ReflectionTestUtils.setField(user, "id", 1L);
 	    }
 	
 	    @Test
@@ -60,6 +77,13 @@ import com.example.issuetracker.dto.response.ProjectResponse;
 	
 	            return savedProject;
 	        });
+	        
+	        User user = new User("John", "john@example.com", "john01", "password", UserRole.USER);
+	        ReflectionTestUtils.setField(user, "id", 1L);
+
+	        when(currentUserProvider.getCurrentUser()).thenReturn(user);
+	        when(projectMemberRepository.save(any(ProjectMember.class)))
+	                .thenAnswer(invocation -> invocation.getArgument(0));
 	
 	        // when
 	        ProjectResponse response = projectService.createProject(request);
@@ -75,9 +99,10 @@ import com.example.issuetracker.dto.response.ProjectResponse;
 	    @Test
 	    void getProjects_success() {
 	        // given
-	        when(projectRepo.findAll()).thenReturn(List.of(project));
-	
+	    	   when(currentUserProvider.isAdmin()).thenReturn(true);
+	    	   when(projectRepo.findAll()).thenReturn(List.of(project));
 	        // when
+	        
 	        List<ProjectResponse> response = projectService.getProjects();
 	
 	        // then

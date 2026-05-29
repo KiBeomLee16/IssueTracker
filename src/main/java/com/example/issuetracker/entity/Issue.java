@@ -54,13 +54,17 @@ public class Issue {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "project_id", nullable = false)
 	private Project project;
-	
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "assignee_id")
 	private User assignee;
 
-	public Issue(String title, String description, IssueStatus status, IssuePriority priority, LocalDate dueDate, Project project) {
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "author_id", nullable = false)
+	private User author;
+
+	public Issue(String title, String description, IssueStatus status, IssuePriority priority, LocalDate dueDate,
+			Project project) {
 		this.title = title;
 		this.description = description;
 		this.status = status == null ? IssueStatus.TODO : status;
@@ -71,12 +75,29 @@ public class Issue {
 		this.updatedAt = LocalDateTime.now();
 	}
 
-	public void update(String title, String description, IssueStatus status, IssuePriority priority,  LocalDate dueDate) {
+	public void update(String title, String description, IssueStatus status, IssuePriority priority,
+			LocalDate dueDate) {
 		this.title = title;
 		this.description = description;
 		this.status = status;
 		this.priority = priority;
 		this.dueDate = dueDate;
 		this.updatedAt = LocalDateTime.now();
+	}
+
+	public static Issue create(Project project, String title, String description, IssueStatus status,
+			IssuePriority priority, LocalDate dueDate, User author, User assignee) {
+		Issue issue = new Issue();
+		issue.project = project;
+		issue.title = title;
+		issue.description = description;
+		issue.status = status == null ? IssueStatus.TODO : status;
+		issue.priority = priority == null ? IssuePriority.MEDIUM : priority;
+		issue.dueDate = dueDate;
+		issue.author = author;
+		issue.assignee = assignee;
+		issue.createdAt = LocalDateTime.now();
+		issue.updatedAt = LocalDateTime.now();
+		return issue;
 	}
 }

@@ -26,6 +26,7 @@ import com.example.issuetracker.repository.IssueRepository;
 import com.example.issuetracker.repository.ProjectRepository;
 import com.example.issuetracker.repository.UserRepository;
 import com.example.issuetracker.response.PageResponse;
+import com.example.issuetracker.security.CurrentUserProvider;
 import com.example.issuetracker.service.IssueService;
 @Service
 public class IssueServiceImpl implements IssueService {
@@ -35,11 +36,27 @@ public class IssueServiceImpl implements IssueService {
 	private IssueRepository issueRepo;
 	@Autowired
 	private UserRepository userRepo; 
+	@Autowired
+	private CurrentUserProvider currentUserProvider ;
+	@Autowired
+	private ProjectAuthorizationService projectAuthorizationService ;
 
 	@Override
 	public IssueResponse createIssue(Long projectId, IssueCreateRequest request) {
 		Project currentProject = projectRepo.findById(projectId).orElseThrow(() -> new ResourceNotFoundException("Project not found. id=" + projectId));
-		Issue issue = new Issue(request.getTitle(), request.getDescription(), request.getStatus(), request.getPriority(), request.getDueDate(), currentProject);
+		projectAuthorizationService.requireProjectMember(projectId);
+		User currentUser = currentUserProvider.getCurrentUser();
+		Issue issue = Issue.create(
+		        currentProject,
+		        request.getTitle(),
+		        request.getDescription(),
+		        request.getStatus(),
+		        request.getPriority(),
+		        request.getDueDate(),
+		        currentUser,
+		        null
+		);
+		
 		issueRepo.save(issue);
 		return new IssueResponse(issue);
 	}
