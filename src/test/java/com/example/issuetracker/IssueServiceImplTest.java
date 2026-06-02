@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -31,6 +33,7 @@ import com.example.issuetracker.entity.IssuePriority;
 import com.example.issuetracker.entity.IssueStatus;
 import com.example.issuetracker.entity.Project;
 import com.example.issuetracker.entity.User;
+import com.example.issuetracker.exception.ForbiddenException;
 import com.example.issuetracker.exception.ResourceNotFoundException;
 import com.example.issuetracker.repository.IssueRepository;
 import com.example.issuetracker.repository.ProjectRepository;
@@ -85,6 +88,7 @@ class IssueServiceImplTest {
         ReflectionTestUtils.setField(issue, "dueDate", LocalDate.of(2026, 6, 30));
         ReflectionTestUtils.setField(issue, "project", project);
         ReflectionTestUtils.setField(issue, "assignee", null);
+        ReflectionTestUtils.setField(issue, "author", user);
     }
 
     @Test
@@ -208,11 +212,13 @@ class IssueServiceImplTest {
         IssueUpdateRequest request = new IssueUpdateRequest();
         ReflectionTestUtils.setField(request, "title", "Updated issue");
         ReflectionTestUtils.setField(request, "description", "Updated description");
-        ReflectionTestUtils.setField(request, "status", IssueStatus.IN_PROGRESS);
+        ReflectionTestUtils.setField(request, "status", IssueStatus.TODO);
         ReflectionTestUtils.setField(request, "priority", IssuePriority.MEDIUM);
         ReflectionTestUtils.setField(request, "dueDate", LocalDate.of(2026, 7, 10));
 
         when(issueRepo.findById(1L)).thenReturn(Optional.of(issue));
+        when(projectAuthorizationService.isProjectOwner(1L)).thenReturn(false);
+        when(currentUserProvider.getCurrentUserId()).thenReturn(1L);
 
         when(issueRepo.save(any(Issue.class))).thenAnswer(invocation -> {
             return invocation.getArgument(0);
@@ -225,11 +231,57 @@ class IssueServiceImplTest {
         assertEquals(1L, response.getId());
         assertEquals("Updated issue", response.getTitle());
         assertEquals("Updated description", response.getDescription());
-        assertEquals(IssueStatus.IN_PROGRESS, response.getStatus());
+        assertEquals(IssueStatus.TODO, response.getStatus());
         assertEquals(IssuePriority.MEDIUM, response.getPriority());
 
         verify(issueRepo).findById(1L);
         verify(issueRepo).save(any(Issue.class));
+    }
+
+    @Test
+    void updateIssue_forbiddenWhenAuthorChangesStatusWithoutStatusPermission() {
+        // given
+        IssueUpdateRequest request = new IssueUpdateRequest();
+        ReflectionTestUtils.setField(request, "title", "Updated issue");
+        ReflectionTestUtils.setField(request, "description", "Updated description");
+        ReflectionTestUtils.setField(request, "status", IssueStatus.IN_PROGRESS);
+        ReflectionTestUtils.setField(request, "priority", IssuePriority.MEDIUM);
+        ReflectionTestUtils.setField(request, "dueDate", LocalDate.of(2026, 7, 10));
+
+        when(issueRepo.findById(1L)).thenReturn(Optional.of(issue));
+        when(projectAuthorizationService.isProjectOwner(1L)).thenReturn(false);
+        when(currentUserProvider.getCurrentUserId()).thenReturn(1L);
+
+        // when & then
+        assertThrows(ForbiddenException.class, () -> {
+            issueService.updateIssue(1L, request);
+        });
+
+        verify(issueRepo).findById(1L);
+        verify(issueRepo, never()).save(any(Issue.class));
+    }
+
+    @Test
+    void updateIssue_forbiddenWhenNotAuthorOrProjectOwner() {
+        // given
+        IssueUpdateRequest request = new IssueUpdateRequest();
+        ReflectionTestUtils.setField(request, "title", "Updated issue");
+        ReflectionTestUtils.setField(request, "description", "Updated description");
+        ReflectionTestUtils.setField(request, "status", IssueStatus.TODO);
+        ReflectionTestUtils.setField(request, "priority", IssuePriority.MEDIUM);
+        ReflectionTestUtils.setField(request, "dueDate", LocalDate.of(2026, 7, 10));
+
+        when(issueRepo.findById(1L)).thenReturn(Optional.of(issue));
+        when(projectAuthorizationService.isProjectOwner(1L)).thenReturn(false);
+        when(currentUserProvider.getCurrentUserId()).thenReturn(2L);
+
+        // when & then
+        assertThrows(ForbiddenException.class, () -> {
+            issueService.updateIssue(1L, request);
+        });
+
+        verify(issueRepo).findById(1L);
+        verify(issueRepo, never()).save(any(Issue.class));
     }
 
     @Test
@@ -256,6 +308,8 @@ class IssueServiceImplTest {
     void deleteIssue_success() {
         // given
         when(issueRepo.findById(1L)).thenReturn(Optional.of(issue));
+        when(projectAuthorizationService.isProjectOwner(1L)).thenReturn(false);
+        when(currentUserProvider.getCurrentUserId()).thenReturn(1L);
         doNothing().when(issueRepo).delete(issue);
 
         // when
@@ -284,8 +338,11 @@ class IssueServiceImplTest {
         // given
         IssueStatusUpdateRequest request = new IssueStatusUpdateRequest();
         ReflectionTestUtils.setField(request, "status", IssueStatus.IN_PROGRESS);
+        ReflectionTestUtils.setField(issue, "assignee", user);
 
         when(issueRepo.findById(1L)).thenReturn(Optional.of(issue));
+        when(projectAuthorizationService.isProjectOwner(1L)).thenReturn(false);
+        when(currentUserProvider.getCurrentUserId()).thenReturn(1L);
 
         when(issueRepo.save(any(Issue.class))).thenAnswer(invocation -> {
             return invocation.getArgument(0);
@@ -300,6 +357,26 @@ class IssueServiceImplTest {
 
         verify(issueRepo).findById(1L);
         verify(issueRepo).save(any(Issue.class));
+    }
+
+    @Test
+    void updateIssueStatus_forbiddenWhenNotAssigneeOrProjectOwner() {
+        // given
+        IssueStatusUpdateRequest request = new IssueStatusUpdateRequest();
+        ReflectionTestUtils.setField(request, "status", IssueStatus.IN_PROGRESS);
+        ReflectionTestUtils.setField(issue, "assignee", user);
+
+        when(issueRepo.findById(1L)).thenReturn(Optional.of(issue));
+        when(projectAuthorizationService.isProjectOwner(1L)).thenReturn(false);
+        when(currentUserProvider.getCurrentUserId()).thenReturn(2L);
+
+        // when & then
+        assertThrows(ForbiddenException.class, () -> {
+            issueService.updateIssueStatus(1L, request);
+        });
+
+        verify(issueRepo).findById(1L);
+        verify(issueRepo, never()).save(any(Issue.class));
     }
 
     @Test
@@ -324,8 +401,8 @@ class IssueServiceImplTest {
         IssueAssignRequest request = new IssueAssignRequest();
         ReflectionTestUtils.setField(request, "assigneeId", 1L);
 
-        when(userRepo.findById(1L)).thenReturn(Optional.of(user));
         when(issueRepo.findById(1L)).thenReturn(Optional.of(issue));
+        when(userRepo.findById(1L)).thenReturn(Optional.of(user));
 
         when(issueRepo.save(any(Issue.class))).thenAnswer(invocation -> {
             return invocation.getArgument(0);
@@ -340,7 +417,31 @@ class IssueServiceImplTest {
 
         verify(userRepo).findById(1L);
         verify(issueRepo).findById(1L);
+        verify(projectAuthorizationService).requireProjectOwner(1L);
+        verify(projectAuthorizationService).requireUserProjectMember(1L, 1L);
         verify(issueRepo).save(any(Issue.class));
+    }
+
+    @Test
+    void assignIssue_forbiddenWhenAssigneeIsNotProjectMember() {
+        // given
+        IssueAssignRequest request = new IssueAssignRequest();
+        ReflectionTestUtils.setField(request, "assigneeId", 1L);
+
+        when(issueRepo.findById(1L)).thenReturn(Optional.of(issue));
+        when(userRepo.findById(1L)).thenReturn(Optional.of(user));
+        doThrow(new ForbiddenException("Project member only."))
+                .when(projectAuthorizationService)
+                .requireUserProjectMember(1L, 1L);
+
+        // when & then
+        assertThrows(ForbiddenException.class, () -> {
+            issueService.assignIssue(1L, request);
+        });
+
+        verify(issueRepo).findById(1L);
+        verify(userRepo).findById(1L);
+        verify(issueRepo, never()).save(any(Issue.class));
     }
 
     @Test
@@ -349,6 +450,7 @@ class IssueServiceImplTest {
         IssueAssignRequest request = new IssueAssignRequest();
         ReflectionTestUtils.setField(request, "assigneeId", 999L);
 
+        when(issueRepo.findById(1L)).thenReturn(Optional.of(issue));
         when(userRepo.findById(999L)).thenReturn(Optional.empty());
 
         // when & then
@@ -356,6 +458,7 @@ class IssueServiceImplTest {
             issueService.assignIssue(1L, request);
         });
 
+        verify(issueRepo).findById(1L);
         verify(userRepo).findById(999L);
     }
 
@@ -365,7 +468,6 @@ class IssueServiceImplTest {
         IssueAssignRequest request = new IssueAssignRequest();
         ReflectionTestUtils.setField(request, "assigneeId", 1L);
 
-        when(userRepo.findById(1L)).thenReturn(Optional.of(user));
         when(issueRepo.findById(999L)).thenReturn(Optional.empty());
 
         // when & then
@@ -373,8 +475,8 @@ class IssueServiceImplTest {
             issueService.assignIssue(999L, request);
         });
 
-        verify(userRepo).findById(1L);
         verify(issueRepo).findById(999L);
+        verify(userRepo, never()).findById(1L);
     }
 
     @Test
@@ -396,6 +498,7 @@ class IssueServiceImplTest {
         assertNull(response.getAssignee());
 
         verify(issueRepo).findById(1L);
+        verify(projectAuthorizationService).requireProjectOwner(1L);
         verify(issueRepo).save(any(Issue.class));
     }
 

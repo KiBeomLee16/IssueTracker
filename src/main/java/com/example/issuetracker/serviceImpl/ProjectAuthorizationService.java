@@ -23,7 +23,13 @@ public class ProjectAuthorizationService {
         if (currentUserProvider.isAdmin()) return;
 
         Long userId = currentUserProvider.getCurrentUserId();
-        if (!projectMemberRepository.existsByProject_IdAndUser_Id(projectId, userId)) {
+        if (!isProjectMember(projectId, userId)) {
+            throw new ForbiddenException("Project member only.");
+        }
+    }
+
+    public void requireUserProjectMember(Long projectId, Long userId) {
+        if (!isProjectMember(projectId, userId)) {
             throw new ForbiddenException("Project member only.");
         }
     }
@@ -46,5 +52,15 @@ public class ProjectAuthorizationService {
                 currentUserProvider.getCurrentUserId(),
                 ProjectMemberRole.OWNER
         );
+    }
+
+    public boolean isProjectMember(Long projectId) {
+        if (currentUserProvider.isAdmin()) return true;
+
+        return isProjectMember(projectId, currentUserProvider.getCurrentUserId());
+    }
+
+    public boolean isProjectMember(Long projectId, Long userId) {
+        return projectMemberRepository.existsByProject_IdAndUser_Id(projectId, userId);
     }
 }

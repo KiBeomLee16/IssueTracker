@@ -19,6 +19,7 @@ import com.example.issuetracker.entity.IssuePriority;
 import com.example.issuetracker.entity.IssueStatus;
 import com.example.issuetracker.entity.Project;
 import com.example.issuetracker.entity.User;
+import com.example.issuetracker.exception.ForbiddenException;
 import com.example.issuetracker.exception.ResourceNotFoundException;
 import org.springframework.data.domain.Page;
 
@@ -63,6 +64,7 @@ public class IssueServiceImpl implements IssueService {
 	@Transactional
 	@Override
 	public List<IssueResponse> getIssuesByProject(Long projectId) {
+		projectAuthorizationService.requireProjectMember(projectId);
 		List<Issue> currentIssues = issueRepo.findByProject_Id(projectId);
 		if (currentIssues.size() == 0) {
 			return new ArrayList<IssueResponse>();
@@ -72,13 +74,18 @@ public class IssueServiceImpl implements IssueService {
 	@Transactional
 	@Override
 	public IssueResponse getIssue(Long issueId) {
-		Issue issue = issueRepo.findById(issueId).orElseThrow(() -> new ResourceNotFoundException("Issue Id not found"));
+		Issue issue = findIssue(issueId);
+		requireIssueReadable(issue);
 		return new IssueResponse(issue);
 	}
 	@Transactional
 	@Override
 	public IssueResponse updateIssue(Long issueId, IssueUpdateRequest request) {
-		Issue issue = issueRepo.findById(issueId).orElseThrow(() -> new ResourceNotFoundException("Issue Id not found"));
+		Issue issue = findIssue(issueId);
+		requireIssueManager(issue);
+		if (request.getStatus() != issue.getStatus()) {
+			requireIssueStatusManager(issue);
+		}
 		issue.update(request.getTitle(), request.getDescription(), request.getStatus(), request.getPriority(), request.getDueDate());
 		 Issue updatedIssue =  issueRepo.save(issue);
 		return new IssueResponse(updatedIssue);
@@ -86,7 +93,8 @@ public class IssueServiceImpl implements IssueService {
 
 	@Override
 	public void deleteIssue(Long issueId) {
-		Issue issue = issueRepo.findById(issueId).orElseThrow(() -> new ResourceNotFoundException("Issue not found. id=" + issueId));
+		Issue issue = findIssue(issueId);
+		requireIssueManager(issue);
 		issueRepo.delete(issue);
 	}
 	@Transactional
@@ -94,6 +102,7 @@ public class IssueServiceImpl implements IssueService {
 	public PageResponse<IssueResponse> searchIssuesByProject(Long projectId, IssueStatus status, IssuePriority priority,
 		String keyword, int page, int size, String sortBy, String direction) {
 		   Project project = projectRepo.findById(projectId).orElseThrow(() -> new ResourceNotFoundException("Project not found. id = " + projectId));
+		   projectAuthorizationService.requireProjectMember(project.getId());
 		   String normalizedKeyword = normalizeKeyword(keyword);
 		   Sort.Direction sortDirection = "asc".equalsIgnoreCase(direction)
 	                ? Sort.Direction.ASC
@@ -138,7 +147,8 @@ public class IssueServiceImpl implements IssueService {
 	@Transactional
 	@Override
 	public IssueResponse updateIssueStatus(Long issueId, IssueStatusUpdateRequest request) {
-		Issue currentIssue = issueRepo.findById(issueId).orElseThrow(() -> new ResourceNotFoundException("Issue ID not found. id = " + issueId));
+		Issue currentIssue = findIssue(issueId);
+		requireIssueStatusManager(currentIssue);
 		currentIssue.setStatus(request.getStatus());
 		Issue savedIssue = issueRepo.save(currentIssue);
 		return IssueResponse.responseDto(savedIssue);
@@ -146,8 +156,11 @@ public class IssueServiceImpl implements IssueService {
 	@Transactional
 	@Override
 	public IssueResponse assignIssue(Long issueId, IssueAssignRequest request) {
+		Issue currentIssue = findIssue(issueId);
+		Long projectId = currentIssue.getProject().getId();
+		projectAuthorizationService.requireProjectOwner(projectId);
 		User currentUser = userRepo.findById(request.getAssigneeId()).orElseThrow(() -> new ResourceNotFoundException("User not Found with this id " + request.getAssigneeId()));
-		Issue currentIssue = issueRepo.findById(issueId).orElseThrow(() -> new ResourceNotFoundException("Issue ID not found. id = " + issueId));
+		projectAuthorizationService.requireUserProjectMember(projectId, currentUser.getId());
 		currentIssue.setAssignee(currentUser);
 		Issue savedIssue = issueRepo.save(currentIssue);
 		return IssueResponse.responseDto(savedIssue);
@@ -155,10 +168,50 @@ public class IssueServiceImpl implements IssueService {
 	@Transactional
 	@Override
 	public IssueResponse unassignIssue(Long issueId) {
-		Issue currentIssue = issueRepo.findById(issueId).orElseThrow(() -> new ResourceNotFoundException("Issue ID not found. id = " + issueId));
+		Issue currentIssue = findIssue(issueId);
+		projectAuthorizationService.requireProjectOwner(currentIssue.getProject().getId());
 		currentIssue.setAssignee(null);
 		Issue savedIssue = issueRepo.save(currentIssue);
 		return IssueResponse.responseDto(savedIssue);
+	}
+
+	private Issue findIssue(Long issueId) {
+		return issueRepo.findById(issueId)
+				.orElseThrow(() -> new ResourceNotFoundException("Issue ID not found. id = " + issueId));
+	}
+
+	private void requireIssueReadable(Issue issue) {
+		projectAuthorizationService.requireProjectMember(issue.getProject().getId());
+	}
+
+	private void requireIssueManager(Issue issue) {
+		Long projectId = issue.getProject().getId();
+		projectAuthorizationService.requireProjectMember(projectId);
+
+		if (projectAuthorizationService.isProjectOwner(projectId) || isCurrentUser(issue.getAuthor())) {
+			return;
+		}
+
+		throw new ForbiddenException("Issue author or project owner only.");
+	}
+
+	private void requireIssueStatusManager(Issue issue) {
+		Long projectId = issue.getProject().getId();
+		projectAuthorizationService.requireProjectMember(projectId);
+
+		if (projectAuthorizationService.isProjectOwner(projectId) || isCurrentUser(issue.getAssignee())) {
+			return;
+		}
+
+		throw new ForbiddenException("Issue assignee or project owner only.");
+	}
+
+	private boolean isCurrentUser(User user) {
+		if (user == null) {
+			return false;
+		}
+
+		return user.getId().equals(currentUserProvider.getCurrentUserId());
 	}
 
 }
