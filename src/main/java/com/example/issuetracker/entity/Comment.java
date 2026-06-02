@@ -40,7 +40,7 @@ public class Comment {
         this.updatedAt = LocalDateTime.now();
     }
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "author_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "author_id", nullable = false)
     private User author;
 }

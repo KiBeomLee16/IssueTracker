@@ -59,8 +59,7 @@ public class CommentControllerTest {
         // given
         String requestBody = """
                 {
-                  "content": "First comment",
-                  "authorId": 1
+                  "content": "First comment"
                 }
                 """;
 

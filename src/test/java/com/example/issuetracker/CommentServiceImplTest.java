@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -24,10 +25,15 @@ import com.example.issuetracker.dto.request.CommentCreateRequest;
 import com.example.issuetracker.dto.response.CommentResponse;
 import com.example.issuetracker.entity.Comment;
 import com.example.issuetracker.entity.Issue;
+import com.example.issuetracker.entity.Project;
+import com.example.issuetracker.entity.User;
+import com.example.issuetracker.exception.ForbiddenException;
 import com.example.issuetracker.exception.ResourceNotFoundException;
 import com.example.issuetracker.repository.CommentRepository;
 import com.example.issuetracker.repository.IssueRepository;
+import com.example.issuetracker.security.CurrentUserProvider;
 import com.example.issuetracker.serviceImpl.CommentServiceImpl;
+import com.example.issuetracker.serviceImpl.ProjectAuthorizationService;
 
 @ExtendWith(MockitoExtension.class)
 public class CommentServiceImplTest {
@@ -38,22 +44,38 @@ public class CommentServiceImplTest {
     @Mock
     private IssueRepository issueRepo;
 
+    @Mock
+    private CurrentUserProvider currentUserProvider;
+
+    @Mock
+    private ProjectAuthorizationService projectAuthorizationService;
+
     @InjectMocks
     private CommentServiceImpl commentService;
 
+    private Project project;
     private Issue issue;
     private Comment comment;
+    private User user;
 
     @BeforeEach
     void setUp() {
+        project = createProjectEntity();
         issue = createIssueEntity();
         comment = createCommentEntity();
+        user = createUserEntity();
 
+        ReflectionTestUtils.setField(project, "id", 1L);
         ReflectionTestUtils.setField(issue, "id", 1L);
+        ReflectionTestUtils.setField(issue, "project", project);
+        ReflectionTestUtils.setField(user, "id", 1L);
+        ReflectionTestUtils.setField(user, "name", "John Doe");
+        ReflectionTestUtils.setField(user, "email", "john@example.com");
 
         ReflectionTestUtils.setField(comment, "id", 1L);
         ReflectionTestUtils.setField(comment, "content", "Test comment");
         ReflectionTestUtils.setField(comment, "issue", issue);
+        ReflectionTestUtils.setField(comment, "author", user);
     }
 
     @Test
@@ -63,6 +85,7 @@ public class CommentServiceImplTest {
         ReflectionTestUtils.setField(request, "content", "Test comment");
 
         when(issueRepo.findById(1L)).thenReturn(Optional.of(issue));
+        when(currentUserProvider.getCurrentUser()).thenReturn(user);
 
         when(commentRepo.save(any(Comment.class))).thenAnswer(invocation -> {
             Comment savedComment = invocation.getArgument(0);
@@ -80,6 +103,8 @@ public class CommentServiceImplTest {
         assertEquals("Test comment", response.getContent());
 
         verify(issueRepo).findById(1L);
+        verify(projectAuthorizationService).requireProjectMember(1L);
+        verify(currentUserProvider).getCurrentUser();
         verify(commentRepo).save(any(Comment.class));
     }
 
@@ -114,6 +139,7 @@ public class CommentServiceImplTest {
         assertEquals("Test comment", response.get(0).getContent());
 
         verify(issueRepo).findById(1L);
+        verify(projectAuthorizationService).requireProjectMember(1L);
         verify(commentRepo).findByIssue_Id(1L);
     }
 
@@ -143,6 +169,7 @@ public class CommentServiceImplTest {
         assertEquals("Test comment", response.getContent());
 
         verify(commentRepo).findById(1L);
+        verify(projectAuthorizationService).requireProjectMember(1L);
     }
 
     @Test
@@ -165,6 +192,8 @@ public class CommentServiceImplTest {
         ReflectionTestUtils.setField(request, "content", "Updated comment");
 
         when(commentRepo.findById(1L)).thenReturn(Optional.of(comment));
+        when(projectAuthorizationService.isProjectOwner(1L)).thenReturn(false);
+        when(currentUserProvider.getCurrentUserId()).thenReturn(1L);
 
         when(commentRepo.save(any(Comment.class))).thenAnswer(invocation -> {
             return invocation.getArgument(0);
@@ -178,7 +207,28 @@ public class CommentServiceImplTest {
         assertEquals("Updated comment", response.getContent());
 
         verify(commentRepo).findById(1L);
+        verify(projectAuthorizationService).requireProjectMember(1L);
         verify(commentRepo).save(any(Comment.class));
+    }
+
+    @Test
+    void updateComment_forbiddenWhenNotAuthorOrProjectOwner() {
+        // given
+        CommentUpdateRequest request = new CommentUpdateRequest();
+        ReflectionTestUtils.setField(request, "content", "Updated comment");
+
+        when(commentRepo.findById(1L)).thenReturn(Optional.of(comment));
+        when(projectAuthorizationService.isProjectOwner(1L)).thenReturn(false);
+        when(currentUserProvider.getCurrentUserId()).thenReturn(2L);
+
+        // when & then
+        assertThrows(ForbiddenException.class, () -> {
+            commentService.updateComment(1L, request);
+        });
+
+        verify(commentRepo).findById(1L);
+        verify(projectAuthorizationService).requireProjectMember(1L);
+        verify(commentRepo, never()).save(any(Comment.class));
     }
 
     @Test
@@ -201,6 +251,8 @@ public class CommentServiceImplTest {
     void deleteComment_success() {
         // given
         when(commentRepo.findById(1L)).thenReturn(Optional.of(comment));
+        when(projectAuthorizationService.isProjectOwner(1L)).thenReturn(false);
+        when(currentUserProvider.getCurrentUserId()).thenReturn(1L);
         doNothing().when(commentRepo).delete(comment);
 
         // when
@@ -208,7 +260,25 @@ public class CommentServiceImplTest {
 
         // then
         verify(commentRepo).findById(1L);
+        verify(projectAuthorizationService).requireProjectMember(1L);
         verify(commentRepo).delete(comment);
+    }
+
+    @Test
+    void deleteComment_forbiddenWhenNotAuthorOrProjectOwner() {
+        // given
+        when(commentRepo.findById(1L)).thenReturn(Optional.of(comment));
+        when(projectAuthorizationService.isProjectOwner(1L)).thenReturn(false);
+        when(currentUserProvider.getCurrentUserId()).thenReturn(2L);
+
+        // when & then
+        assertThrows(ForbiddenException.class, () -> {
+            commentService.deleteComment(1L);
+        });
+
+        verify(commentRepo).findById(1L);
+        verify(projectAuthorizationService).requireProjectMember(1L);
+        verify(commentRepo, never()).delete(any(Comment.class));
     }
 
     @Test
@@ -224,6 +294,16 @@ public class CommentServiceImplTest {
         verify(commentRepo).findById(999L);
     }
 
+    private Project createProjectEntity() {
+        try {
+            Constructor<Project> constructor = Project.class.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            return constructor.newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private Issue createIssueEntity() {
         try {
             Constructor<Issue> constructor = Issue.class.getDeclaredConstructor();
@@ -237,6 +317,16 @@ public class CommentServiceImplTest {
     private Comment createCommentEntity() {
         try {
             Constructor<Comment> constructor = Comment.class.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            return constructor.newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private User createUserEntity() {
+        try {
+            Constructor<User> constructor = User.class.getDeclaredConstructor();
             constructor.setAccessible(true);
             return constructor.newInstance();
         } catch (Exception e) {
