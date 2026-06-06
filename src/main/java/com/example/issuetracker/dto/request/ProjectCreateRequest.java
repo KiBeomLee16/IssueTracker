@@ -12,16 +12,15 @@ import lombok.Setter;
 @Setter
 public class ProjectCreateRequest {
 
-    @NotBlank(message = "Project name is required.")
-    private String name;
+	@NotBlank(message = "Project name is required.")
+	private String name;
 
-    private String description;
+	private String description;
 
- 
-    private ProjectStatus status;
-    
-    public ProjectCreateRequest (String name , String description) {
-    	this.name = name; 
-    	this.description = description ; 
-    }
+	private ProjectStatus status;
+
+	public ProjectCreateRequest(String name, String description) {
+		this.name = name;
+		this.description = description;
+	}
 }

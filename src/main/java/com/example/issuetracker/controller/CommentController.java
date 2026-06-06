@@ -15,47 +15,43 @@ import java.util.List;
 @RequestMapping("/api")
 public class CommentController {
 
-    @Autowired
-    private CommentService commentService;
+	@Autowired
+	private CommentService commentService;
 
-    @PostMapping("/issues/{issueId}/comments")
-    public ApiResponse<CommentResponse> createComment(
-            @PathVariable Long issueId,
-            @Valid @RequestBody CommentCreateRequest request
-    ) {
-        CommentResponse response = commentService.createComment(issueId, request);
+	@PostMapping("/issues/{issueId}/comments")
+	public ApiResponse<CommentResponse> createComment(@PathVariable Long issueId,
+			@Valid @RequestBody CommentCreateRequest request) {
+		CommentResponse response = commentService.createComment(issueId, request);
 
-        return ApiResponse.success("Comment created successfully", response);
-    }
+		return ApiResponse.success("Comment created successfully", response);
+	}
 
-    @GetMapping("/issues/{issueId}/comments")
-    public ApiResponse<List<CommentResponse>> getCommentsByIssue(@PathVariable Long issueId) {
-        List<CommentResponse> responses = commentService.getCommentsByIssue(issueId);
+	@GetMapping("/issues/{issueId}/comments")
+	public ApiResponse<List<CommentResponse>> getCommentsByIssue(@PathVariable Long issueId) {
+		List<CommentResponse> responses = commentService.getCommentsByIssue(issueId);
 
-        return ApiResponse.success("Comments retrieved successfully", responses);
-    }
+		return ApiResponse.success("Comments retrieved successfully", responses);
+	}
 
-    @GetMapping("/comments/{commentId}")
-    public ApiResponse<CommentResponse> getComment(@PathVariable Long commentId) {
-        CommentResponse response = commentService.getComment(commentId);
+	@GetMapping("/comments/{commentId}")
+	public ApiResponse<CommentResponse> getComment(@PathVariable Long commentId) {
+		CommentResponse response = commentService.getComment(commentId);
 
-        return ApiResponse.success("Comment retrieved successfully", response);
-    }
+		return ApiResponse.success("Comment retrieved successfully", response);
+	}
 
-    @PutMapping("/comments/{commentId}")
-    public ApiResponse<CommentResponse> updateComment(
-            @PathVariable Long commentId,
-            @Valid @RequestBody CommentUpdateRequest request
-    ) {
-        CommentResponse response = commentService.updateComment(commentId, request);
+	@PutMapping("/comments/{commentId}")
+	public ApiResponse<CommentResponse> updateComment(@PathVariable Long commentId,
+			@Valid @RequestBody CommentUpdateRequest request) {
+		CommentResponse response = commentService.updateComment(commentId, request);
 
-        return ApiResponse.success("Comment updated successfully", response);
-    }
+		return ApiResponse.success("Comment updated successfully", response);
+	}
 
-    @DeleteMapping("/comments/{commentId}")
-    public ApiResponse<Void> deleteComment(@PathVariable Long commentId) {
-        commentService.deleteComment(commentId);
+	@DeleteMapping("/comments/{commentId}")
+	public ApiResponse<Void> deleteComment(@PathVariable Long commentId) {
+		commentService.deleteComment(commentId);
 
-        return ApiResponse.success("Comment deleted successfully");
-    }
+		return ApiResponse.success("Comment deleted successfully");
+	}
 }

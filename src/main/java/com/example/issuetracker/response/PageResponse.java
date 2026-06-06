@@ -11,17 +11,17 @@ import java.util.List;
 @AllArgsConstructor
 public class PageResponse<T> {
 
-    private List<T> content;
+	private List<T> content;
 
-    private int page;
+	private int page;
 
-    private int size;
+	private int size;
 
-    private long totalElements;
+	private long totalElements;
 
-    private int totalPages;
+	private int totalPages;
 
-    private boolean first;
+	private boolean first;
 
-    private boolean last;
+	private boolean last;
 }

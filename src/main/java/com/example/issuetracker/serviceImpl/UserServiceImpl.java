@@ -1,6 +1,5 @@
 package com.example.issuetracker.serviceImpl;
 
-
 import com.example.issuetracker.dto.UpdateRequest.UserUpdateRequest;
 import com.example.issuetracker.dto.request.UserCreateRequest;
 import com.example.issuetracker.dto.response.UserResponse;
@@ -21,100 +20,97 @@ import java.util.List;
 @Service
 public class UserServiceImpl implements UserService {
 
-    @Autowired
-    private UserRepository userRepo;
+	@Autowired
+	private UserRepository userRepo;
 
-    @Autowired
-    private IssueRepository issueRepo;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    @Override
-    public UserResponse createUser(UserCreateRequest request) {
-        if (userRepo.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("this email is already registered");
-        }
+	@Autowired
+	private IssueRepository issueRepo;
+	@Autowired
+	private PasswordEncoder passwordEncoder;
 
-        if (userRepo.existsByUserId(request.getUserId())) {
-            throw new IllegalArgumentException("this ID is already registered");
-        }
-        String encryptedPasswrod = passwordEncoder.encode(request.getPassword());
-        User user = new User(request.getName(), request.getEmail(), request.getUserId(), encryptedPasswrod, UserRole.USER);
+	@Override
+	public UserResponse createUser(UserCreateRequest request) {
+		if (userRepo.existsByEmail(request.getEmail())) {
+			throw new IllegalArgumentException("this email is already registered");
+		}
 
-        User savedUser = userRepo.save(user);
+		if (userRepo.existsByUserId(request.getUserId())) {
+			throw new IllegalArgumentException("this ID is already registered");
+		}
+		String encryptedPasswrod = passwordEncoder.encode(request.getPassword());
+		User user = new User(request.getName(), request.getEmail(), request.getUserId(), encryptedPasswrod,
+				UserRole.USER);
 
-        return UserResponse.getUserResponse(savedUser);
-    }
-    
-    @Override
-    public UserResponse createAdmin(UserCreateRequest request) {
-        if (userRepo.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("this email is already registered");
-        }
+		User savedUser = userRepo.save(user);
 
-        if (userRepo.existsByUserId(request.getUserId())) {
-            throw new IllegalArgumentException("this ID is already registered");
-        }
-        String encryptedPasswrod = passwordEncoder.encode(request.getPassword());
-        User user = new User(request.getName(), request.getEmail(), request.getUserId(), encryptedPasswrod, UserRole.ADMIN);
+		return UserResponse.getUserResponse(savedUser);
+	}
 
-        User savedUser = userRepo.save(user);
+	@Override
+	public UserResponse createAdmin(UserCreateRequest request) {
+		if (userRepo.existsByEmail(request.getEmail())) {
+			throw new IllegalArgumentException("this email is already registered");
+		}
 
-        return UserResponse.getUserResponse(savedUser);
-    }
+		if (userRepo.existsByUserId(request.getUserId())) {
+			throw new IllegalArgumentException("this ID is already registered");
+		}
+		String encryptedPasswrod = passwordEncoder.encode(request.getPassword());
+		User user = new User(request.getName(), request.getEmail(), request.getUserId(), encryptedPasswrod,
+				UserRole.ADMIN);
 
-    @Override
-    public List<UserResponse> getUsers() {
-        return userRepo.findAll()
-                .stream()
-                .map(UserResponse::getUserResponse)
-                .toList();
-    }
+		User savedUser = userRepo.save(user);
 
-    @Override
-    public UserResponse getUser(Long id) {
-        User user = userRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found. id=" + id));
+		return UserResponse.getUserResponse(savedUser);
+	}
 
-        return UserResponse.getUserResponse(user);
-    }
+	@Override
+	public List<UserResponse> getUsers() {
+		return userRepo.findAll().stream().map(UserResponse::getUserResponse).toList();
+	}
 
-    @Override
-    public UserResponse updateUser(Long id, UserUpdateRequest request) {
-        User user = userRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found. id=" + id));
+	@Override
+	public UserResponse getUser(Long id) {
+		User user = userRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found. id=" + id));
 
-        userRepo.findByEmail(request.getEmail()).ifPresent(foundUser -> {
-            if (!foundUser.getId().equals(id)) {
-                throw new IllegalArgumentException("this email is already registered");
-            }
-        });
+		return UserResponse.getUserResponse(user);
+	}
 
-        userRepo.findByUserId(request.getUserId()).ifPresent(foundUser -> {
-            if (!foundUser.getId().equals(id)) {
-                throw new IllegalArgumentException("this ID is already registered");
-            }
-        });
+	@Override
+	public UserResponse updateUser(Long id, UserUpdateRequest request) {
+		User user = userRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found. id=" + id));
 
-        user.setName(request.getName());
-        user.setEmail(request.getEmail());
-        user.setUserId(request.getUserId());
+		userRepo.findByEmail(request.getEmail()).ifPresent(foundUser -> {
+			if (!foundUser.getId().equals(id)) {
+				throw new IllegalArgumentException("this email is already registered");
+			}
+		});
 
-        User savedUser = userRepo.save(user);
+		userRepo.findByUserId(request.getUserId()).ifPresent(foundUser -> {
+			if (!foundUser.getId().equals(id)) {
+				throw new IllegalArgumentException("this ID is already registered");
+			}
+		});
 
-        return UserResponse.getUserResponse(savedUser);
-    }
+		user.setName(request.getName());
+		user.setEmail(request.getEmail());
+		user.setUserId(request.getUserId());
 
-    @Override
-    public void deleteUser(Long id) {
-        User user = userRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found. id=" + id));
+		User savedUser = userRepo.save(user);
 
-        long assignedIssueCount = issueRepo.countByAssignee_Id(id);
+		return UserResponse.getUserResponse(savedUser);
+	}
 
-        if (assignedIssueCount > 0) {
-            throw new IllegalArgumentException("Please contact Admin for delete user");
-        }
+	@Override
+	public void deleteUser(Long id) {
+		User user = userRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found. id=" + id));
 
-        userRepo.delete(user);
-    }
+		long assignedIssueCount = issueRepo.countByAssignee_Id(id);
+
+		if (assignedIssueCount > 0) {
+			throw new IllegalArgumentException("Please contact Admin for delete user");
+		}
+
+		userRepo.delete(user);
+	}
 }

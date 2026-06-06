@@ -1,6 +1,5 @@
 package com.example.issuetracker.dto.request;
 
-
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,10 +8,10 @@ import lombok.Setter;
 @Setter
 public class LoginRequest {
 
-    @NotBlank(message = "User Id is required.")
+	@NotBlank(message = "User Id is required.")
 
-    private String userId;
+	private String userId;
 
-    @NotBlank(message = "Password is required.")
-    private String password;
+	@NotBlank(message = "Password is required.")
+	private String password;
 }

@@ -81,34 +81,31 @@ public class ProjectServiceImpl implements ProjectService {
 
 	@Override
 	public ProjectResponse updateProject(Long projectId, ProjectUpdateRequest request) {
-	    projectAuthorizationService.requireProjectOwner(projectId);
+		projectAuthorizationService.requireProjectOwner(projectId);
 
-	    Project project = repo.findById(projectId)
-	            .orElseThrow(() -> new ResourceNotFoundException("Project not found. id=" + projectId));
+		Project project = repo.findById(projectId)
+				.orElseThrow(() -> new ResourceNotFoundException("Project not found. id=" + projectId));
 
-	    project.update(
-	            request.getName(),
-	            request.getDescription(),
-	            request.getStatus()
-	    );
+		project.update(request.getName(), request.getDescription(), request.getStatus());
 
-	    Project updatedProject = repo.save(project);
+		Project updatedProject = repo.save(project);
 
-	    return new ProjectResponse(updatedProject);
+		return new ProjectResponse(updatedProject);
 	}
 
 	@Override
 	public void deleteProject(Long projectId) {
-	    projectAuthorizationService.requireProjectOwner(projectId);
+		projectAuthorizationService.requireProjectOwner(projectId);
 
-	    Project project = repo.findById(projectId)
-	            .orElseThrow(() -> new ResourceNotFoundException("Project not found. id=" + projectId));
+		Project project = repo.findById(projectId)
+				.orElseThrow(() -> new ResourceNotFoundException("Project not found. id=" + projectId));
 
-	    repo.delete(project);
+		repo.delete(project);
 	}
+
 	@Override
 	public ProjectStatsResponse getProjectStats(Long projectId) {
-		  projectAuthorizationService.requireProjectMember(projectId);
+		projectAuthorizationService.requireProjectMember(projectId);
 		Project project = repo.findById(projectId)
 				.orElseThrow(() -> new ResourceNotFoundException("Project not found. id=" + projectId));
 

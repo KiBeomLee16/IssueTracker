@@ -13,15 +13,15 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class IssueCreateRequest {
 
-    @NotBlank(message = "Issue title is required.")
-    private String title;
+	@NotBlank(message = "Issue title is required.")
+	private String title;
 
-    private String description;
+	private String description;
 
-    private IssueStatus status;
+	private IssueStatus status;
 
-    private IssuePriority priority;
+	private IssuePriority priority;
 
-    @FutureOrPresent(message = "Due date must be today or future.")
-    private LocalDate dueDate;
+	@FutureOrPresent(message = "Due date must be today or future.")
+	private LocalDate dueDate;
 }

@@ -1,8 +1,8 @@
 # Issue Tracker REST API
 
-Spring Boot based REST API for managing projects, project members, issues, comments, users, authentication, and authorization.
+Spring Boot based REST API for managing projects, project members, issues, comments, users, authentication, authorization, token refresh, logout, and issue audit history.
 
-This project is a personal backend portfolio project. It focuses on practical REST API design, layered architecture, validation, global exception handling, Spring Security, JWT authentication, project-member authorization, Flyway database migration, testing, Swagger/OpenAPI documentation, Docker, Docker Compose, and CI.
+This project is a personal backend portfolio project. It focuses on practical REST API design, layered architecture, validation, global exception handling, Spring Security, JWT authentication, refresh token management, project-member authorization, issue audit logging, Flyway database migration, testing, Swagger/OpenAPI documentation, Docker, Docker Compose, and CI.
 
 ---
 
@@ -52,7 +52,7 @@ This project is a personal backend portfolio project. It focuses on practical RE
 
 Issue Tracker REST API provides backend features for a project-based issue tracking system.
 
-Users can sign up, log in, create projects, manage project members, create issues, assign issues, update issue status, write comments, and view project statistics. The project includes both global role-based authorization and project-level ownership/member authorization.
+Users can sign up, log in, refresh access tokens, log out, create projects, manage project members, create issues, assign issues, update issue status, track issue change history, write comments, and view project statistics. The project includes both global role-based authorization and project-level ownership/member authorization.
 
 ---
 
@@ -63,6 +63,8 @@ Users can sign up, log in, create projects, manage project members, create issue
 - User signup and login
 - BCrypt password encoding
 - JWT access token generation
+- Refresh token storage and access token reissue
+- Logout by refresh token revocation
 - Stateless Bearer Token authentication
 - Custom authentication and access-denied JSON responses
 - Swagger Bearer Token authorization support
@@ -100,6 +102,7 @@ Users can sign up, log in, create projects, manage project members, create issue
 - Issue assign and unassign
 - Issue author tracking
 - Assignee validation against project membership
+- Issue status, priority, assignee, title, description, and due date change history
 
 ### Comment
 
@@ -112,6 +115,7 @@ Users can sign up, log in, create projects, manage project members, create issue
 - Common `ApiResponse`
 - Validation and global exception handling
 - Flyway schema migration
+- Seed data for local demo accounts and issue examples
 - Dockerfile
 - Docker Compose for app + MySQL
 - Production-oriented Docker Compose file
@@ -164,11 +168,13 @@ MySQL Database
 ```text
 1. User signs up or logs in
 2. Server validates credentials
-3. Server returns JWT access token
+3. Server returns JWT access token and refresh token
 4. Client sends Authorization: Bearer <accessToken>
-5. JwtAuthenticationFilter validates the token
+5. JwtAuthenticationFilter validates the access token
 6. SecurityContext is populated
-7. Controller and service authorization rules are applied
+7. Client can request a new access token with the refresh token
+8. Logout revokes the stored refresh token
+9. Controller and service authorization rules are applied
 ```
 
 More architecture notes:
@@ -255,7 +261,9 @@ erDiagram
 | Method | URL | Auth | Description |
 |---|---|---|---|
 | POST | `/api/auth/signup` | Public | Sign up |
-| POST | `/api/auth/login` | Public | Login and receive JWT |
+| POST | `/api/auth/login` | Public | Login and receive access/refresh tokens |
+| POST | `/api/auth/refresh` | Public | Reissue access token with refresh token |
+| POST | `/api/auth/logout` | Public | Revoke refresh token |
 
 ### Project API
 
@@ -297,6 +305,7 @@ Add member request:
 | PATCH | `/api/issues/{issueId}/status` | Required | Update issue status |
 | PATCH | `/api/issues/{issueId}/assignee` | Required | Assign issue |
 | DELETE | `/api/issues/{issueId}/assignee` | Required | Unassign issue |
+| GET | `/api/issues/{issueId}/histories` | Required | List issue change history |
 
 Create issue request:
 
@@ -433,6 +442,7 @@ MYSQL_PASSWORD=change-this-db-password
 
 JWT_SECRET=replace-with-a-secure-random-secret-at-least-32-characters
 JWT_EXPIRATION_MS=3600000
+JWT_REFRESH_EXPIRATION_MS=1209600000
 
 DDL_AUTO=validate
 
@@ -442,6 +452,14 @@ ADMIN_EMAIL=admin@example.com
 ADMIN_NAME=Admin
 ADMIN_PASSWORD=change-this-admin-password
 ```
+
+Demo accounts inserted by Flyway sample data:
+
+| Role | User ID | Password |
+|---|---|---|
+| ADMIN | `admin01` | `password` |
+| Project Owner | `owner01` | `password` |
+| Project Member | `member01` | `password` |
 
 Notes:
 
@@ -584,10 +602,13 @@ Use `ADMIN_BOOTSTRAP_ENABLED=true` only when bootstrapping the first admin accou
 
 Flyway is responsible for schema creation and migration.
 
-Current migration:
+Current migrations:
 
 ```text
 src/main/resources/db/migration/V1__insert_table_sql.sql
+src/main/resources/db/migration/V2__insert_sample_data.sql
+src/main/resources/db/migration/V3__create_refresh_tokens.sql
+src/main/resources/db/migration/V4__create_issue_histories.sql
 ```
 
 Flyway naming rule:
@@ -600,8 +621,9 @@ Examples:
 
 ```text
 V1__insert_table_sql.sql
-V2__add_issue_history.sql
-V3__add_issue_labels.sql
+V2__insert_sample_data.sql
+V3__create_refresh_tokens.sql
+V4__create_issue_histories.sql
 ```
 
 Important:
@@ -634,11 +656,12 @@ Current test coverage includes:
 - Security authorization tests
 - Project member service/controller tests
 - Issue and comment authorization tests
+- Refresh token service/controller tests
 
 Current test count:
 
 ```text
-96 tests
+101 tests
 ```
 
 ---
@@ -685,9 +708,6 @@ Before deployment:
 
 ## Future Improvements
 
-- Add refresh token support
-- Add logout or token blacklist
-- Add issue history/audit log
 - Add file attachments
 - Add labels or tags
 - Add dashboard summary API
@@ -701,4 +721,4 @@ Before deployment:
 
 ## Project Goal
 
-The goal of this project is to demonstrate practical backend development with Java, Spring Boot, JPA, MySQL, REST API design, validation, exception handling, Spring Security, JWT, project-level authorization, Flyway migration, testing, Swagger documentation, Docker, Docker Compose, CI, and deployment readiness.
+The goal of this project is to demonstrate practical backend development with Java, Spring Boot, JPA, MySQL, REST API design, validation, exception handling, Spring Security, JWT, refresh token management, project-level authorization, issue audit logging, Flyway migration, testing, Swagger documentation, Docker, Docker Compose, CI, and deployment readiness.

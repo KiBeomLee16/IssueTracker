@@ -1,7 +1,5 @@
 package com.example.issuetracker.security;
 
-
-
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -15,49 +13,37 @@ import java.util.Date;
 @Component
 public class JwtTokenProvider {
 
-    @Value("${jwt.secret}")
-    private String jwtSecret;
+	@Value("${jwt.secret}")
+	private String jwtSecret;
 
-    @Value("${jwt.expiration-ms}")
-    private long jwtExpirationMs;
+	@Value("${jwt.expiration-ms}")
+	private long jwtExpirationMs;
 
-    public String generateToken(CustomUserDetails userDetails) {
-        Date now = new Date();
-        Date expiration = new Date(now.getTime() + jwtExpirationMs);
+	public String generateToken(CustomUserDetails userDetails) {
+		Date now = new Date();
+		Date expiration = new Date(now.getTime() + jwtExpirationMs);
 
-        return Jwts.builder()
-                .subject(userDetails.getUsername())
-                .claim("role", userDetails.getUser().getRole().name())
-                .issuedAt(now)
-                .expiration(expiration)
-                .signWith(getSigningKey())
-                .compact();
-    }
+		return Jwts.builder().subject(userDetails.getUsername()).claim("role", userDetails.getUser().getRole().name())
+				.issuedAt(now).expiration(expiration).signWith(getSigningKey()).compact();
+	}
 
-    public String getUserIdFromToken(String token) {
-        Claims claims = Jwts.parser()
-                .verifyWith(getSigningKey())
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
+	public String getUserIdFromToken(String token) {
+		Claims claims = Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token).getPayload();
 
-        return claims.getSubject();
-    }
+		return claims.getSubject();
+	}
 
-    public boolean validateToken(String token) {
-        try {
-            Jwts.parser()
-                    .verifyWith(getSigningKey())
-                    .build()
-                    .parseSignedClaims(token);
+	public boolean validateToken(String token) {
+		try {
+			Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token);
 
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
+	}
 
-    private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-    }
+	private SecretKey getSigningKey() {
+		return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+	}
 }

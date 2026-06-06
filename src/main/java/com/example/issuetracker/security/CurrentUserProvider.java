@@ -14,46 +14,42 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CurrentUserProvider {
 
-    private final UserRepository userRepository;
+	private final UserRepository userRepository;
 
-    public Long getCurrentUserId() {
-        Authentication authentication = getAuthentication();
+	public Long getCurrentUserId() {
+		Authentication authentication = getAuthentication();
 
-        Object principal = authentication.getPrincipal();
+		Object principal = authentication.getPrincipal();
 
-        if (principal instanceof CustomUserDetails userDetails) {
-        	 return userDetails.getId();
-        }
+		if (principal instanceof CustomUserDetails userDetails) {
+			return userDetails.getId();
+		}
 
-        throw new IllegalStateException("Unsupported principal type.");
-    }
+		throw new IllegalStateException("Unsupported principal type.");
+	}
 
-    @Transactional(readOnly = true)
-    public User getCurrentUser() {
-        Long userId = getCurrentUserId();
+	@Transactional(readOnly = true)
+	public User getCurrentUser() {
+		Long userId = getCurrentUserId();
 
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
-    }
+		return userRepository.findById(userId).orElseThrow(() -> new ResourceNotFoundException("User not found."));
+	}
 
-    public boolean isAdmin() {
-        Authentication authentication = getAuthentication();
+	public boolean isAdmin() {
+		Authentication authentication = getAuthentication();
 
-        return authentication.getAuthorities().stream()
-                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
-    }
+		return authentication.getAuthorities().stream()
+				.anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
+	}
 
-    private Authentication getAuthentication() {
-        Authentication authentication = SecurityContextHolder
-                .getContext()
-                .getAuthentication();
+	private Authentication getAuthentication() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication == null ||
-                !authentication.isAuthenticated() ||
-                authentication instanceof AnonymousAuthenticationToken) {
-            throw new IllegalStateException("Unauthenticated user.");
-        }
+		if (authentication == null || !authentication.isAuthenticated()
+				|| authentication instanceof AnonymousAuthenticationToken) {
+			throw new IllegalStateException("Unauthenticated user.");
+		}
 
-        return authentication;
-    }
+		return authentication;
+	}
 }

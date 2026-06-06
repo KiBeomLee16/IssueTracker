@@ -1,6 +1,5 @@
 package com.example.issuetracker;
 
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -8,6 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -20,12 +20,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import com.example.issuetracker.dto.request.LoginRequest;
+import com.example.issuetracker.dto.request.RefreshTokenRequest;
 import com.example.issuetracker.dto.request.UserCreateRequest;
 import com.example.issuetracker.dto.response.LoginResponse;
 import com.example.issuetracker.dto.response.UserResponse;
+import com.example.issuetracker.entity.RefreshToken;
 import com.example.issuetracker.entity.User;
 import com.example.issuetracker.entity.UserRole;
 import com.example.issuetracker.exception.ResourceNotFoundException;
+import com.example.issuetracker.repository.RefreshTokenRepository;
 import com.example.issuetracker.repository.UserRepository;
 import com.example.issuetracker.security.CustomUserDetails;
 import com.example.issuetracker.security.JwtTokenProvider;
@@ -34,199 +37,195 @@ import com.example.issuetracker.serviceImpl.AuthServiceImpl;
 @ExtendWith(MockitoExtension.class)
 public class AuthServiceImplTest {
 
-    @Mock
-    private UserRepository userRepo;
+	@Mock
+	private UserRepository userRepo;
 
-    @Mock
-    private PasswordEncoder passwordEncoder;
+	@Mock
+	private RefreshTokenRepository refreshTokenRepo;
 
-    @Mock
-    private JwtTokenProvider jwtTokenProvider;
+	@Mock
+	private PasswordEncoder passwordEncoder;
 
-    @InjectMocks
-    private AuthServiceImpl authService;
+	@Mock
+	private JwtTokenProvider jwtTokenProvider;
 
-    @Test
-    void signup_success() {
-        // given
-        UserCreateRequest request = createUserCreateRequest(
-                "John Doe",
-                "john@example.com",
-                "john01",
-                "password1234"
-        );
+	@InjectMocks
+	private AuthServiceImpl authService;
 
-        when(userRepo.existsByEmail("john@example.com"))
-                .thenReturn(false);
-        when(userRepo.existsByUserId("john01"))
-                .thenReturn(false);
-        when(passwordEncoder.encode("password1234"))
-                .thenReturn("encodedPassword");
-        when(userRepo.save(any(User.class)))
-                .thenAnswer(invocation -> {
-                    User user = invocation.getArgument(0);
-                    ReflectionTestUtils.setField(user, "id", 1L);
-                    return user;
-                });
+	@Test
+	void signup_success() {
+		// given
+		UserCreateRequest request = createUserCreateRequest("John Doe", "john@example.com", "john01", "password1234");
 
-        // when
-        UserResponse response = authService.signup(request);
+		when(userRepo.existsByEmail("john@example.com")).thenReturn(false);
+		when(userRepo.existsByUserId("john01")).thenReturn(false);
+		when(passwordEncoder.encode("password1234")).thenReturn("encodedPassword");
+		when(userRepo.save(any(User.class))).thenAnswer(invocation -> {
+			User user = invocation.getArgument(0);
+			ReflectionTestUtils.setField(user, "id", 1L);
+			return user;
+		});
 
-        // then
-        assertThat(response.getId()).isEqualTo(1L);
-        assertThat(response.getName()).isEqualTo("John Doe");
-        assertThat(response.getEmail()).isEqualTo("john@example.com");
-        assertThat(response.getUserId()).isEqualTo("john01");
+		// when
+		UserResponse response = authService.signup(request);
 
-        verify(passwordEncoder).encode("password1234");
-        verify(userRepo).save(any(User.class));
-    }
+		// then
+		assertThat(response.getId()).isEqualTo(1L);
+		assertThat(response.getName()).isEqualTo("John Doe");
+		assertThat(response.getEmail()).isEqualTo("john@example.com");
+		assertThat(response.getUserId()).isEqualTo("john01");
 
-    @Test
-    void signup_fail_whenEmailAlreadyExists() {
-        // given
-        UserCreateRequest request = createUserCreateRequest(
-                "John Doe",
-                "john@example.com",
-                "john01",
-                "password1234"
-        );
+		verify(passwordEncoder).encode("password1234");
+		verify(userRepo).save(any(User.class));
+	}
 
-        when(userRepo.existsByEmail("john@example.com"))
-                .thenReturn(true);
+	@Test
+	void signup_fail_whenEmailAlreadyExists() {
+		// given
+		UserCreateRequest request = createUserCreateRequest("John Doe", "john@example.com", "john01", "password1234");
 
-        // when & then
-        assertThatThrownBy(() -> authService.signup(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("Email already exists.");
+		when(userRepo.existsByEmail("john@example.com")).thenReturn(true);
 
-        verify(userRepo, never()).save(any(User.class));
-    }
+		// when & then
+		assertThatThrownBy(() -> authService.signup(request)).isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Email already exists.");
 
-    @Test
-    void signup_fail_whenUserIdAlreadyExists() {
-        // given
-        UserCreateRequest request = createUserCreateRequest(
-                "John Doe",
-                "john@example.com",
-                "john01",
-                "password1234"
-        );
+		verify(userRepo, never()).save(any(User.class));
+	}
 
-        when(userRepo.existsByEmail("john@example.com"))
-                .thenReturn(false);
-        when(userRepo.existsByUserId("john01"))
-                .thenReturn(true);
+	@Test
+	void signup_fail_whenUserIdAlreadyExists() {
+		// given
+		UserCreateRequest request = createUserCreateRequest("John Doe", "john@example.com", "john01", "password1234");
 
-        // when & then
-        assertThatThrownBy(() -> authService.signup(request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("User ID already exists.");
+		when(userRepo.existsByEmail("john@example.com")).thenReturn(false);
+		when(userRepo.existsByUserId("john01")).thenReturn(true);
 
-        verify(userRepo, never()).save(any(User.class));
-    }
+		// when & then
+		assertThatThrownBy(() -> authService.signup(request)).isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("User ID already exists.");
 
-    @Test
-    void login_success() {
-        // given
-        LoginRequest request = createLoginRequest("john01", "password1234");
+		verify(userRepo, never()).save(any(User.class));
+	}
 
-        User user = createUser(
-                1L,
-                "John Doe",
-                "john@example.com",
-                "john01",
-                "encodedPassword",
-                UserRole.USER
-        );
+	@Test
+	void login_success() {
+		// given
+		LoginRequest request = createLoginRequest("john01", "password1234");
 
-        when(userRepo.findByUserId("john01"))
-                .thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("password1234", "encodedPassword"))
-                .thenReturn(true);
-        when(jwtTokenProvider.generateToken(any(CustomUserDetails.class)))
-                .thenReturn("test.jwt.token");
+		User user = createUser(1L, "John Doe", "john@example.com", "john01", "encodedPassword", UserRole.USER);
 
-        // when
-        LoginResponse response = authService.login(request);
+		when(userRepo.findByUserId("john01")).thenReturn(Optional.of(user));
+		when(passwordEncoder.matches("password1234", "encodedPassword")).thenReturn(true);
+		when(jwtTokenProvider.generateToken(any(CustomUserDetails.class))).thenReturn("test.jwt.token");
 
-        // then
-        assertThat(response.getAccessToken()).isEqualTo("test.jwt.token");
-        assertThat(response.getTokenType()).isEqualTo("Bearer");
-    }
+		// when
+		LoginResponse response = authService.login(request);
 
-    @Test
-    void login_fail_whenUserNotFound() {
-        // given
-        LoginRequest request = createLoginRequest("unknown", "password1234");
+		// then
+		assertThat(response.getAccessToken()).isEqualTo("test.jwt.token");
+		assertThat(response.getRefreshToken()).isNotBlank();
+		assertThat(response.getTokenType()).isEqualTo("Bearer");
+	}
 
-        when(userRepo.findByUserId("unknown"))
-                .thenReturn(Optional.empty());
+	@Test
+	void refresh_success() {
+		// given
+		RefreshTokenRequest request = createRefreshTokenRequest("refresh-token");
 
-        // when & then
-        assertThatThrownBy(() -> authService.login(request))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage("User not found.");
-    }
+		User user = createUser(1L, "John Doe", "john@example.com", "john01", "encodedPassword", UserRole.USER);
+		RefreshToken refreshToken = new RefreshToken("refresh-token", user, LocalDateTime.now().plusDays(1));
 
-    @Test
-    void login_fail_whenPasswordDoesNotMatch() {
-        // given
-        LoginRequest request = createLoginRequest("john01", "wrongPassword");
+		when(refreshTokenRepo.findByToken("refresh-token")).thenReturn(Optional.of(refreshToken));
+		when(jwtTokenProvider.generateToken(any(CustomUserDetails.class))).thenReturn("new.jwt.token");
 
-        User user = createUser(
-                1L,
-                "John Doe",
-                "john@example.com",
-                "john01",
-                "encodedPassword",
-                UserRole.USER
-        );
+		// when
+		LoginResponse response = authService.refresh(request);
 
-        when(userRepo.findByUserId("john01"))
-                .thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("wrongPassword", "encodedPassword"))
-                .thenReturn(false);
+		// then
+		assertThat(response.getAccessToken()).isEqualTo("new.jwt.token");
+		assertThat(response.getRefreshToken()).isEqualTo("refresh-token");
+		assertThat(response.getTokenType()).isEqualTo("Bearer");
+	}
 
-        // when & then
-        assertThatThrownBy(() -> authService.login(request))
-                .isInstanceOf(BadCredentialsException.class)
-                .hasMessage("Invalid email or password.");
+	@Test
+	void refresh_fail_whenTokenNotFound() {
+		// given
+		RefreshTokenRequest request = createRefreshTokenRequest("invalid-token");
 
-        verify(jwtTokenProvider, never()).generateToken(any(CustomUserDetails.class));
-    }
+		when(refreshTokenRepo.findByToken("invalid-token")).thenReturn(Optional.empty());
 
-    private UserCreateRequest createUserCreateRequest(
-            String name,
-            String email,
-            String userId,
-            String password
-    ) {
-        UserCreateRequest request = new UserCreateRequest();
-        request.setName(name);
-        request.setEmail(email);
-        request.setUserId(userId);
-        request.setPassword(password);
-        return request;
-    }
+		// when & then
+		assertThatThrownBy(() -> authService.refresh(request)).isInstanceOf(BadCredentialsException.class)
+				.hasMessage("Invalid refresh token.");
+	}
 
-    private LoginRequest createLoginRequest(String userId, String password) {
-        LoginRequest request = new LoginRequest();
-        request.setUserId(userId);
-        request.setPassword(password);
-        return request;
-    }
+	@Test
+	void logout_success() {
+		// given
+		RefreshTokenRequest request = createRefreshTokenRequest("refresh-token");
 
-    private User createUser(
-            Long id,
-            String name,
-            String email,
-            String userId,
-            String password,
-            UserRole role
-    ) {
-        User user = new User(name, email, userId, password, role);
-        ReflectionTestUtils.setField(user, "id", id);
-        return user;
-    }
+		// when
+		authService.logout(request);
+
+		// then
+		verify(refreshTokenRepo).deleteByToken("refresh-token");
+	}
+
+	@Test
+	void login_fail_whenUserNotFound() {
+		// given
+		LoginRequest request = createLoginRequest("unknown", "password1234");
+
+		when(userRepo.findByUserId("unknown")).thenReturn(Optional.empty());
+
+		// when & then
+		assertThatThrownBy(() -> authService.login(request)).isInstanceOf(ResourceNotFoundException.class)
+				.hasMessage("User not found.");
+	}
+
+	@Test
+	void login_fail_whenPasswordDoesNotMatch() {
+		// given
+		LoginRequest request = createLoginRequest("john01", "wrongPassword");
+
+		User user = createUser(1L, "John Doe", "john@example.com", "john01", "encodedPassword", UserRole.USER);
+
+		when(userRepo.findByUserId("john01")).thenReturn(Optional.of(user));
+		when(passwordEncoder.matches("wrongPassword", "encodedPassword")).thenReturn(false);
+
+		// when & then
+		assertThatThrownBy(() -> authService.login(request)).isInstanceOf(BadCredentialsException.class)
+				.hasMessage("Invalid email or password.");
+
+		verify(jwtTokenProvider, never()).generateToken(any(CustomUserDetails.class));
+	}
+
+	private UserCreateRequest createUserCreateRequest(String name, String email, String userId, String password) {
+		UserCreateRequest request = new UserCreateRequest();
+		request.setName(name);
+		request.setEmail(email);
+		request.setUserId(userId);
+		request.setPassword(password);
+		return request;
+	}
+
+	private LoginRequest createLoginRequest(String userId, String password) {
+		LoginRequest request = new LoginRequest();
+		request.setUserId(userId);
+		request.setPassword(password);
+		return request;
+	}
+
+	private RefreshTokenRequest createRefreshTokenRequest(String refreshToken) {
+		RefreshTokenRequest request = new RefreshTokenRequest();
+		request.setRefreshToken(refreshToken);
+		return request;
+	}
+
+	private User createUser(Long id, String name, String email, String userId, String password, UserRole role) {
+		User user = new User(name, email, userId, password, role);
+		ReflectionTestUtils.setField(user, "id", id);
+		return user;
+	}
 }

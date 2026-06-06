@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.example.issuetracker.controller.AuthController;
 import com.example.issuetracker.dto.request.LoginRequest;
+import com.example.issuetracker.dto.request.RefreshTokenRequest;
 import com.example.issuetracker.dto.request.UserCreateRequest;
 import com.example.issuetracker.dto.response.LoginResponse;
 import com.example.issuetracker.dto.response.UserResponse;
@@ -35,158 +36,172 @@ import com.example.issuetracker.service.AuthService;
 @AutoConfigureMockMvc(addFilters = false)
 public class AuthControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+	@Autowired
+	private MockMvc mockMvc;
 
-    @MockitoBean
-    private AuthService authService;
+	@MockitoBean
+	private AuthService authService;
 
-    @MockitoBean
-    private CustomUserDetailsService customUserDetailsService;
+	@MockitoBean
+	private CustomUserDetailsService customUserDetailsService;
 
-    @MockitoBean
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
+	@MockitoBean
+	private JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @MockitoBean
-    private JwtTokenProvider jwtTokenProvider;
+	@MockitoBean
+	private JwtTokenProvider jwtTokenProvider;
 
-    @Test
-    void signup_success() throws Exception {
-        // given
-        String requestBody = """
-                {
-                  "name": "John",
-                  "email": "john@example.com",
-                  "userId": "john01",
-                  "password": "password"
-                }
-                """;
+	@Test
+	void signup_success() throws Exception {
+		// given
+		String requestBody = """
+				{
+				  "name": "John",
+				  "email": "john@example.com",
+				  "userId": "john01",
+				  "password": "password"
+				}
+				""";
 
-        UserResponse response = createUserResponse(
-                1L,
-                "John",
-                "john@example.com",
-                "john01"
-        );
+		UserResponse response = createUserResponse(1L, "John", "john@example.com", "john01");
 
-        when(authService.signup(any(UserCreateRequest.class)))
-                .thenReturn(response);
+		when(authService.signup(any(UserCreateRequest.class))).thenReturn(response);
 
-        // when & then
-        mockMvc.perform(post("/api/auth/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("Signup successful."))
-                .andExpect(jsonPath("$.data.id").value(1))
-                .andExpect(jsonPath("$.data.name").value("John"))
-                .andExpect(jsonPath("$.data.email").value("john@example.com"))
-                .andExpect(jsonPath("$.data.userId").value("john01"));
+		// when & then
+		mockMvc.perform(post("/api/auth/signup").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("Signup successful.")).andExpect(jsonPath("$.data.id").value(1))
+				.andExpect(jsonPath("$.data.name").value("John"))
+				.andExpect(jsonPath("$.data.email").value("john@example.com"))
+				.andExpect(jsonPath("$.data.userId").value("john01"));
 
-        verify(authService).signup(any(UserCreateRequest.class));
-    }
+		verify(authService).signup(any(UserCreateRequest.class));
+	}
 
-    @Test
-    void login_success() throws Exception {
-        // given
-        String requestBody = """
-                {
-                  "userId": "john01",
-                  "password": "password"
-                }
-                """;
+	@Test
+	void login_success() throws Exception {
+		// given
+		String requestBody = """
+				{
+				  "userId": "john01",
+				  "password": "password"
+				}
+				""";
 
-        LoginResponse response = new LoginResponse("test.jwt.token", "Bearer");
+		LoginResponse response = new LoginResponse("test.jwt.token", "test.refresh.token", "Bearer");
 
-        when(authService.login(any(LoginRequest.class)))
-                .thenReturn(response);
+		when(authService.login(any(LoginRequest.class))).thenReturn(response);
 
-        // when & then
-        mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("Login successful."))
-                .andExpect(jsonPath("$.data.accessToken").value("test.jwt.token"))
-                .andExpect(jsonPath("$.data.tokenType").value("Bearer"));
+		// when & then
+		mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("Login successful."))
+				.andExpect(jsonPath("$.data.accessToken").value("test.jwt.token"))
+				.andExpect(jsonPath("$.data.refreshToken").value("test.refresh.token"))
+				.andExpect(jsonPath("$.data.tokenType").value("Bearer"));
 
-        verify(authService).login(any(LoginRequest.class));
-    }
+		verify(authService).login(any(LoginRequest.class));
+	}
 
-    @Test
-    void login_fail_whenPasswordDoesNotMatch() throws Exception {
-        // given
-        String requestBody = """
-                {
-                  "userId": "john01",
-                  "password": "wrongPassword"
-                }
-                """;
+	@Test
+	void refresh_success() throws Exception {
+		// given
+		String requestBody = """
+				{
+				  "refreshToken": "test.refresh.token"
+				}
+				""";
 
-        when(authService.login(any(LoginRequest.class)))
-                .thenThrow(new BadCredentialsException("Invalid email or password."));
+		LoginResponse response = new LoginResponse("new.jwt.token", "test.refresh.token", "Bearer");
 
-        // when & then
-        mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.message").value("Invalid userId or password."));
-    }
+		when(authService.refresh(any(RefreshTokenRequest.class))).thenReturn(response);
 
-    @Test
-    void signup_validationFail_whenUserIdIsBlank() throws Exception {
-        // given
-        String requestBody = """
-                {
-                  "name": "John",
-                  "email": "john@example.com",
-                  "userId": "",
-                  "password": "password"
-                }
-                """;
+		// when & then
+		mockMvc.perform(post("/api/auth/refresh").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("Token refreshed successfully."))
+				.andExpect(jsonPath("$.data.accessToken").value("new.jwt.token"))
+				.andExpect(jsonPath("$.data.refreshToken").value("test.refresh.token"))
+				.andExpect(jsonPath("$.data.tokenType").value("Bearer"));
 
-        // when & then
-        mockMvc.perform(post("/api/auth/signup")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false));
-    }
+		verify(authService).refresh(any(RefreshTokenRequest.class));
+	}
 
-    @Test
-    void login_validationFail_whenPasswordIsBlank() throws Exception {
-        // given
-        String requestBody = """
-                {
-                  "userId": "john01",
-                  "password": ""
-                }
-                """;
+	@Test
+	void logout_success() throws Exception {
+		// given
+		String requestBody = """
+				{
+				  "refreshToken": "test.refresh.token"
+				}
+				""";
 
-        // when & then
-        mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false));
-    }
+		// when & then
+		mockMvc.perform(post("/api/auth/logout").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("Logout successful."));
 
-    private UserResponse createUserResponse(
-            Long id,
-            String name,
-            String email,
-            String userId
-    ) {
-        User user = new User(name, email, userId, "encodedPassword", UserRole.USER);
+		verify(authService).logout(any(RefreshTokenRequest.class));
+	}
 
-        ReflectionTestUtils.setField(user, "id", id);
-        ReflectionTestUtils.setField(user, "createdAt", LocalDateTime.now());
-        ReflectionTestUtils.setField(user, "updatedAt", LocalDateTime.now());
+	@Test
+	void login_fail_whenPasswordDoesNotMatch() throws Exception {
+		// given
+		String requestBody = """
+				{
+				  "userId": "john01",
+				  "password": "wrongPassword"
+				}
+				""";
 
-        return new UserResponse(user);
-    }
+		when(authService.login(any(LoginRequest.class)))
+				.thenThrow(new BadCredentialsException("Invalid email or password."));
+
+		// when & then
+		mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+				.andExpect(status().isUnauthorized()).andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.message").value("Invalid userId or password."));
+	}
+
+	@Test
+	void signup_validationFail_whenUserIdIsBlank() throws Exception {
+		// given
+		String requestBody = """
+				{
+				  "name": "John",
+				  "email": "john@example.com",
+				  "userId": "",
+				  "password": "password"
+				}
+				""";
+
+		// when & then
+		mockMvc.perform(post("/api/auth/signup").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+				.andExpect(status().isBadRequest()).andExpect(jsonPath("$.success").value(false));
+	}
+
+	@Test
+	void login_validationFail_whenPasswordIsBlank() throws Exception {
+		// given
+		String requestBody = """
+				{
+				  "userId": "john01",
+				  "password": ""
+				}
+				""";
+
+		// when & then
+		mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+				.andExpect(status().isBadRequest()).andExpect(jsonPath("$.success").value(false));
+	}
+
+	private UserResponse createUserResponse(Long id, String name, String email, String userId) {
+		User user = new User(name, email, userId, "encodedPassword", UserRole.USER);
+
+		ReflectionTestUtils.setField(user, "id", id);
+		ReflectionTestUtils.setField(user, "createdAt", LocalDateTime.now());
+		ReflectionTestUtils.setField(user, "updatedAt", LocalDateTime.now());
+
+		return new UserResponse(user);
+	}
 }

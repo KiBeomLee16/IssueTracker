@@ -5,7 +5,6 @@ import com.example.issuetracker.dto.request.ProjectCreateRequest;
 import com.example.issuetracker.dto.response.ProjectResponse;
 import com.example.issuetracker.dto.response.ProjectStatsResponse;
 
-
 import java.util.List;
 
 public interface ProjectService {
@@ -19,6 +18,6 @@ public interface ProjectService {
 	ProjectResponse updateProject(Long projectId, ProjectUpdateRequest request);
 
 	void deleteProject(Long projectId);
-	
+
 	ProjectStatsResponse getProjectStats(Long projectId);
 }

@@ -9,16 +9,16 @@ import lombok.Setter;
 @Setter
 public class UserCreateRequest {
 
-    @NotBlank(message = "Name is Required.")
-    private String name;
+	@NotBlank(message = "Name is Required.")
+	private String name;
 
-    @NotBlank(message = "Email is Required.")
-    @Email(message = "Please check your Email format.")
-    private String email;
-    
-    @NotBlank(message = "User Id is Required.")
-    private String userId;
-    
-    @NotBlank(message = "User Password is Required.")
-    private String password;
-}	
+	@NotBlank(message = "Email is Required.")
+	@Email(message = "Please check your Email format.")
+	private String email;
+
+	@NotBlank(message = "User Id is Required.")
+	private String userId;
+
+	@NotBlank(message = "User Password is Required.")
+	private String password;
+}

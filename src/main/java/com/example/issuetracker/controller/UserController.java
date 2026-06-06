@@ -18,72 +18,51 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/users")
 public class UserController {
 
-    @Autowired
-    private UserService userService;
+	@Autowired
+	private UserService userService;
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<UserResponse>> createUser(
-            @Valid @RequestBody UserCreateRequest request
-    ) {
-        UserResponse response = userService.createUser(request);
+	@PostMapping
+	public ResponseEntity<ApiResponse<UserResponse>> createUser(@Valid @RequestBody UserCreateRequest request) {
+		UserResponse response = userService.createUser(request);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(ApiResponse.success("User created successfully.", response));
-    }
-    
-    @PostMapping("/admin")
-    public ResponseEntity<ApiResponse<UserResponse>> createAdmin(
-            @Valid @RequestBody UserCreateRequest request
-    ) {
-        UserResponse response = userService.createAdmin(request);
+		return ResponseEntity.status(HttpStatus.CREATED)
+				.body(ApiResponse.success("User created successfully.", response));
+	}
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(ApiResponse.success("User created successfully.", response));
-    }
+	@PostMapping("/admin")
+	public ResponseEntity<ApiResponse<UserResponse>> createAdmin(@Valid @RequestBody UserCreateRequest request) {
+		UserResponse response = userService.createAdmin(request);
 
+		return ResponseEntity.status(HttpStatus.CREATED)
+				.body(ApiResponse.success("User created successfully.", response));
+	}
 
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<UserResponse>>> getUsers() {
-        List<UserResponse> response = userService.getUsers();
+	@GetMapping
+	public ResponseEntity<ApiResponse<List<UserResponse>>> getUsers() {
+		List<UserResponse> response = userService.getUsers();
 
-        return ResponseEntity.ok(
-                ApiResponse.success("Users retrieved successfully.", response)
-        );
-    }
+		return ResponseEntity.ok(ApiResponse.success("Users retrieved successfully.", response));
+	}
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<UserResponse>> getUser(
-            @PathVariable Long id
-    ) {
-        UserResponse response = userService.getUser(id);
+	@GetMapping("/{id}")
+	public ResponseEntity<ApiResponse<UserResponse>> getUser(@PathVariable Long id) {
+		UserResponse response = userService.getUser(id);
 
-        return ResponseEntity.ok(
-                ApiResponse.success("User retrieved successfully.", response)
-        );
-    }
+		return ResponseEntity.ok(ApiResponse.success("User retrieved successfully.", response));
+	}
 
-    @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<UserResponse>> updateUser(
-            @PathVariable Long id,
-            @Valid @RequestBody UserUpdateRequest request
-    ) {
-        UserResponse response = userService.updateUser(id, request);
+	@PutMapping("/{id}")
+	public ResponseEntity<ApiResponse<UserResponse>> updateUser(@PathVariable Long id,
+			@Valid @RequestBody UserUpdateRequest request) {
+		UserResponse response = userService.updateUser(id, request);
 
-        return ResponseEntity.ok(
-                ApiResponse.success("User updated successfully.", response)
-        );
-    }
+		return ResponseEntity.ok(ApiResponse.success("User updated successfully.", response));
+	}
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteUser(
-            @PathVariable Long id
-    ) {
-        userService.deleteUser(id);
+	@DeleteMapping("/{id}")
+	public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable Long id) {
+		userService.deleteUser(id);
 
-        return ResponseEntity.ok(
-                ApiResponse.success("User deleted successfully.")
-        );
-    }
+		return ResponseEntity.ok(ApiResponse.success("User deleted successfully."));
+	}
 }

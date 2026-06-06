@@ -21,7 +21,7 @@ public class ProjectController {
 	@Autowired
 	private ProjectService projectService;
 
-	@PostMapping({ "",  })
+	@PostMapping({ "", })
 	public ResponseEntity<ApiResponse<ProjectResponse>> createProject(
 			@Valid @RequestBody ProjectCreateRequest request) {
 		ProjectResponse response = projectService.createProject(request);

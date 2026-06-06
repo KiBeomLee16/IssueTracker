@@ -24,41 +24,30 @@ import jakarta.validation.Valid;
 @RequestMapping("/api/projects/{projectId}/members")
 public class ProjectMemberController {
 
-    @Autowired
-    private ProjectMemberService projectMemberService;
+	@Autowired
+	private ProjectMemberService projectMemberService;
 
-    @GetMapping
-    public ResponseEntity<ApiResponse<List<ProjectMemberResponse>>> getProjectMembers(
-            @PathVariable Long projectId
-    ) {
-        List<ProjectMemberResponse> response = projectMemberService.getProjectMembers(projectId);
+	@GetMapping
+	public ResponseEntity<ApiResponse<List<ProjectMemberResponse>>> getProjectMembers(@PathVariable Long projectId) {
+		List<ProjectMemberResponse> response = projectMemberService.getProjectMembers(projectId);
 
-        return ResponseEntity.ok(
-                ApiResponse.success("Project members retrieved successfully.", response)
-        );
-    }
+		return ResponseEntity.ok(ApiResponse.success("Project members retrieved successfully.", response));
+	}
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<ProjectMemberResponse>> addProjectMember(
-            @PathVariable Long projectId,
-            @Valid @RequestBody ProjectMemberAddRequest request
-    ) {
-        ProjectMemberResponse response = projectMemberService.addProjectMember(projectId, request);
+	@PostMapping
+	public ResponseEntity<ApiResponse<ProjectMemberResponse>> addProjectMember(@PathVariable Long projectId,
+			@Valid @RequestBody ProjectMemberAddRequest request) {
+		ProjectMemberResponse response = projectMemberService.addProjectMember(projectId, request);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Project member added successfully.", response));
-    }
+		return ResponseEntity.status(HttpStatus.CREATED)
+				.body(ApiResponse.success("Project member added successfully.", response));
+	}
 
-    @DeleteMapping("/{userId}")
-    public ResponseEntity<ApiResponse<Void>> removeProjectMember(
-            @PathVariable Long projectId,
-            @PathVariable Long userId
-    ) {
-        projectMemberService.removeProjectMember(projectId, userId);
+	@DeleteMapping("/{userId}")
+	public ResponseEntity<ApiResponse<Void>> removeProjectMember(@PathVariable Long projectId,
+			@PathVariable Long userId) {
+		projectMemberService.removeProjectMember(projectId, userId);
 
-        return ResponseEntity.ok(
-                ApiResponse.success("Project member removed successfully.")
-        );
-    }
+		return ResponseEntity.ok(ApiResponse.success("Project member removed successfully."));
+	}
 }

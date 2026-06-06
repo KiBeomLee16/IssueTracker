@@ -7,9 +7,9 @@ import com.example.issuetracker.dto.response.ProjectMemberResponse;
 
 public interface ProjectMemberService {
 
-    List<ProjectMemberResponse> getProjectMembers(Long projectId);
+	List<ProjectMemberResponse> getProjectMembers(Long projectId);
 
-    ProjectMemberResponse addProjectMember(Long projectId, ProjectMemberAddRequest request);
+	ProjectMemberResponse addProjectMember(Long projectId, ProjectMemberAddRequest request);
 
-    void removeProjectMember(Long projectId, Long userId);
+	void removeProjectMember(Long projectId, Long userId);
 }

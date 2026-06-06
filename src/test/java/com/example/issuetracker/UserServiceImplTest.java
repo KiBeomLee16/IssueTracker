@@ -42,9 +42,9 @@ public class UserServiceImplTest {
 	@Mock
 	private IssueRepository issueRepo;
 
-    @Mock
-    private PasswordEncoder passwordEncoder;
-    
+	@Mock
+	private PasswordEncoder passwordEncoder;
+
 	private User user;
 
 	@BeforeEach
@@ -59,44 +59,35 @@ public class UserServiceImplTest {
 	@Test
 	void createUser_success() {
 		// given
-		 UserCreateRequest request = new UserCreateRequest();
-	        request.setName("John Doe");
-	        request.setEmail("john@example.com");
-	        request.setUserId("john01");
-	        request.setPassword("1234");
+		UserCreateRequest request = new UserCreateRequest();
+		request.setName("John Doe");
+		request.setEmail("john@example.com");
+		request.setUserId("john01");
+		request.setPassword("1234");
 
-	        when(userRepo.existsByEmail("john@example.com"))
-	                .thenReturn(false);
+		when(userRepo.existsByEmail("john@example.com")).thenReturn(false);
 
-	        when(userRepo.existsByUserId("john01"))
-	                .thenReturn(false);
+		when(userRepo.existsByUserId("john01")).thenReturn(false);
 
-	        when(passwordEncoder.encode("1234"))
-	                .thenReturn("encodedPassword");
+		when(passwordEncoder.encode("1234")).thenReturn("encodedPassword");
 
-	        User savedUser = new User(
-	            
-	                "John Doe",
-	                "john@example.com",
-	                "john01",
-	                "encodedPassword",
-	                UserRole.USER);
-	             
+		User savedUser = new User(
 
-	        when(userRepo.save(any(User.class)))
-	                .thenReturn(savedUser);
+				"John Doe", "john@example.com", "john01", "encodedPassword", UserRole.USER);
 
-	        // when
-	        UserResponse response = userService.createUser(request);
+		when(userRepo.save(any(User.class))).thenReturn(savedUser);
 
-	        // then
+		// when
+		UserResponse response = userService.createUser(request);
 
-	        assertEquals("John Doe", response.getName());
-	        assertEquals("john@example.com", response.getEmail());
-	        assertEquals("john01", response.getUserId());
+		// then
 
-	        verify(passwordEncoder).encode("1234");
-	        verify(userRepo).save(any(User.class));
+		assertEquals("John Doe", response.getName());
+		assertEquals("john@example.com", response.getEmail());
+		assertEquals("john01", response.getUserId());
+
+		verify(passwordEncoder).encode("1234");
+		verify(userRepo).save(any(User.class));
 	}
 
 	@Test

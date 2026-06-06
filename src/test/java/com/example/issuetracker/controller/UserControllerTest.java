@@ -1,4 +1,5 @@
 package com.example.issuetracker.controller;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -40,184 +41,135 @@ import com.example.issuetracker.service.UserService;
 @AutoConfigureMockMvc(addFilters = false)
 public class UserControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+	@Autowired
+	private MockMvc mockMvc;
 
-    @MockitoBean
-    private UserService userService;
-    
-    @MockitoBean
-    private CustomUserDetailsService customUserDetailsService;
+	@MockitoBean
+	private UserService userService;
 
-    @MockitoBean
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
+	@MockitoBean
+	private CustomUserDetailsService customUserDetailsService;
 
-    @MockitoBean
-    private JwtTokenProvider jwtTokenProvider;
+	@MockitoBean
+	private JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @Test
-    void createUser_success() throws Exception {
-        // given
-        String requestBody = """
-                {
-                  "name": "John Doe",
-                  "email": "john@example.com",
-                  "userId": "john01",
-                  "password" : "password"
-                }
-                """;
+	@MockitoBean
+	private JwtTokenProvider jwtTokenProvider;
 
-        UserResponse response = createUserResponse(
-                1L,
-                "John Doe",
-                "john@example.com",
-                "john01"
-        );
+	@Test
+	void createUser_success() throws Exception {
+		// given
+		String requestBody = """
+				{
+				  "name": "John Doe",
+				  "email": "john@example.com",
+				  "userId": "john01",
+				  "password" : "password"
+				}
+				""";
 
-        when(userService.createUser(any(UserCreateRequest.class)))
-                .thenReturn(response);
+		UserResponse response = createUserResponse(1L, "John Doe", "john@example.com", "john01");
 
-        // when & then
-        mockMvc.perform(post("/api/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("User created successfully."))
-                .andExpect(jsonPath("$.data.id").value(1))
-                .andExpect(jsonPath("$.data.name").value("John Doe"))
-                .andExpect(jsonPath("$.data.email").value("john@example.com"))
-                .andExpect(jsonPath("$.data.userId").value("john01"));
+		when(userService.createUser(any(UserCreateRequest.class))).thenReturn(response);
 
-        verify(userService).createUser(any(UserCreateRequest.class));
-    }
+		// when & then
+		mockMvc.perform(post("/api/users").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+				.andExpect(status().isCreated()).andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("User created successfully."))
+				.andExpect(jsonPath("$.data.id").value(1)).andExpect(jsonPath("$.data.name").value("John Doe"))
+				.andExpect(jsonPath("$.data.email").value("john@example.com"))
+				.andExpect(jsonPath("$.data.userId").value("john01"));
 
-    @Test
-    void getUsers_success() throws Exception {
-        // given
-        UserResponse user1 = createUserResponse(
-                1L,
-                "John Doe",
-                "john@example.com",
-                "john01"
-        );
+		verify(userService).createUser(any(UserCreateRequest.class));
+	}
 
-        UserResponse user2 = createUserResponse(
-                2L,
-                "Jane Smith",
-                "jane@example.com",
-                "jane01"
-        );
+	@Test
+	void getUsers_success() throws Exception {
+		// given
+		UserResponse user1 = createUserResponse(1L, "John Doe", "john@example.com", "john01");
 
-        when(userService.getUsers())
-                .thenReturn(List.of(user1, user2));
+		UserResponse user2 = createUserResponse(2L, "Jane Smith", "jane@example.com", "jane01");
 
-        // when & then
-        mockMvc.perform(get("/api/users"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("Users retrieved successfully."))
-                .andExpect(jsonPath("$.data[0].id").value(1))
-                .andExpect(jsonPath("$.data[0].name").value("John Doe"))
-                .andExpect(jsonPath("$.data[0].email").value("john@example.com"))
-                .andExpect(jsonPath("$.data[0].userId").value("john01"))
-                .andExpect(jsonPath("$.data[1].id").value(2))
-                .andExpect(jsonPath("$.data[1].name").value("Jane Smith"))
-                .andExpect(jsonPath("$.data[1].email").value("jane@example.com"))
-                .andExpect(jsonPath("$.data[1].userId").value("jane01"));
+		when(userService.getUsers()).thenReturn(List.of(user1, user2));
 
-        verify(userService).getUsers();
-    }
+		// when & then
+		mockMvc.perform(get("/api/users")).andExpect(status().isOk()).andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("Users retrieved successfully."))
+				.andExpect(jsonPath("$.data[0].id").value(1)).andExpect(jsonPath("$.data[0].name").value("John Doe"))
+				.andExpect(jsonPath("$.data[0].email").value("john@example.com"))
+				.andExpect(jsonPath("$.data[0].userId").value("john01")).andExpect(jsonPath("$.data[1].id").value(2))
+				.andExpect(jsonPath("$.data[1].name").value("Jane Smith"))
+				.andExpect(jsonPath("$.data[1].email").value("jane@example.com"))
+				.andExpect(jsonPath("$.data[1].userId").value("jane01"));
 
-    @Test
-    void getUser_success() throws Exception {
-        // given
-        UserResponse response = createUserResponse(
-                1L,
-                "John Doe",
-                "john@example.com",
-                "john01"
-        );
+		verify(userService).getUsers();
+	}
 
-        when(userService.getUser(1L))
-                .thenReturn(response);
+	@Test
+	void getUser_success() throws Exception {
+		// given
+		UserResponse response = createUserResponse(1L, "John Doe", "john@example.com", "john01");
 
-        // when & then
-        mockMvc.perform(get("/api/users/{id}", 1L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("User retrieved successfully."))
-                .andExpect(jsonPath("$.data.id").value(1))
-                .andExpect(jsonPath("$.data.name").value("John Doe"))
-                .andExpect(jsonPath("$.data.email").value("john@example.com"))
-                .andExpect(jsonPath("$.data.userId").value("john01"));
+		when(userService.getUser(1L)).thenReturn(response);
 
-        verify(userService).getUser(1L);
-    }
+		// when & then
+		mockMvc.perform(get("/api/users/{id}", 1L)).andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("User retrieved successfully."))
+				.andExpect(jsonPath("$.data.id").value(1)).andExpect(jsonPath("$.data.name").value("John Doe"))
+				.andExpect(jsonPath("$.data.email").value("john@example.com"))
+				.andExpect(jsonPath("$.data.userId").value("john01"));
 
-    @Test
-    void updateUser_success() throws Exception {
-        // given
-        String requestBody = """
-                {
-                  "name": "Updated User",
-                  "email": "updated@example.com",
-                  "userId": "updated01"
-                }
-                """;
+		verify(userService).getUser(1L);
+	}
 
-        UserResponse response = createUserResponse(
-                1L,
-                "Updated User",
-                "updated@example.com",
-                "updated01"
-        );
+	@Test
+	void updateUser_success() throws Exception {
+		// given
+		String requestBody = """
+				{
+				  "name": "Updated User",
+				  "email": "updated@example.com",
+				  "userId": "updated01"
+				}
+				""";
 
-        when(userService.updateUser(eq(1L), any(UserUpdateRequest.class)))
-                .thenReturn(response);
+		UserResponse response = createUserResponse(1L, "Updated User", "updated@example.com", "updated01");
 
-        // when & then
-        mockMvc.perform(put("/api/users/{id}", 1L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("User updated successfully."))
-                .andExpect(jsonPath("$.data.id").value(1))
-                .andExpect(jsonPath("$.data.name").value("Updated User"))
-                .andExpect(jsonPath("$.data.email").value("updated@example.com"))
-                .andExpect(jsonPath("$.data.userId").value("updated01"));
+		when(userService.updateUser(eq(1L), any(UserUpdateRequest.class))).thenReturn(response);
 
-        verify(userService).updateUser(eq(1L), any(UserUpdateRequest.class));
-    }
+		// when & then
+		mockMvc.perform(put("/api/users/{id}", 1L).contentType(MediaType.APPLICATION_JSON).content(requestBody))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("User updated successfully."))
+				.andExpect(jsonPath("$.data.id").value(1)).andExpect(jsonPath("$.data.name").value("Updated User"))
+				.andExpect(jsonPath("$.data.email").value("updated@example.com"))
+				.andExpect(jsonPath("$.data.userId").value("updated01"));
 
-    @Test
-    void deleteUser_success() throws Exception {
-        // given
-        doNothing().when(userService).deleteUser(1L);
+		verify(userService).updateUser(eq(1L), any(UserUpdateRequest.class));
+	}
 
-        // when & then
-        mockMvc.perform(delete("/api/users/{id}", 1L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("User deleted successfully."));
+	@Test
+	void deleteUser_success() throws Exception {
+		// given
+		doNothing().when(userService).deleteUser(1L);
 
-        verify(userService).deleteUser(1L);
-    }
+		// when & then
+		mockMvc.perform(delete("/api/users/{id}", 1L)).andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("User deleted successfully."));
 
-    private UserResponse createUserResponse(
-            Long id,
-            String name,
-            String email,
-            String userId
-    ) {
-        User user = new User();
+		verify(userService).deleteUser(1L);
+	}
 
-        ReflectionTestUtils.setField(user, "id", id);
-        ReflectionTestUtils.setField(user, "name", name);
-        ReflectionTestUtils.setField(user, "email", email);
-        ReflectionTestUtils.setField(user, "userId", userId);
+	private UserResponse createUserResponse(Long id, String name, String email, String userId) {
+		User user = new User();
 
-        return new UserResponse(user);
-    }
+		ReflectionTestUtils.setField(user, "id", id);
+		ReflectionTestUtils.setField(user, "name", name);
+		ReflectionTestUtils.setField(user, "email", email);
+		ReflectionTestUtils.setField(user, "userId", userId);
+
+		return new UserResponse(user);
+	}
 }

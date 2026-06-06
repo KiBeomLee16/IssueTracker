@@ -8,6 +8,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class ProjectMemberAddRequest {
 
-    @NotNull(message = "User ID is required.")
-    private Long userId;
+	@NotNull(message = "User ID is required.")
+	private Long userId;
 }

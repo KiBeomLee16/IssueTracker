@@ -8,6 +8,6 @@ import lombok.Setter;
 @Setter
 public class IssueAssignRequest {
 
-    @NotNull(message = "담당자 ID는 필수입니다.")
+    @NotNull(message = "Assignee id is required")
     private Long assigneeId;
 }

@@ -1,73 +1,117 @@
 package com.example.issuetracker.serviceImpl;
 
 import com.example.issuetracker.dto.request.LoginRequest;
+import com.example.issuetracker.dto.request.RefreshTokenRequest;
 import com.example.issuetracker.dto.request.UserCreateRequest;
 import com.example.issuetracker.dto.response.LoginResponse;
 import com.example.issuetracker.dto.response.UserResponse;
+import com.example.issuetracker.entity.RefreshToken;
 import com.example.issuetracker.entity.User;
 import com.example.issuetracker.entity.UserRole;
 
 import com.example.issuetracker.exception.ResourceNotFoundException;
+import com.example.issuetracker.repository.RefreshTokenRepository;
 import com.example.issuetracker.repository.UserRepository;
 import com.example.issuetracker.security.CustomUserDetails;
 import com.example.issuetracker.security.JwtTokenProvider;
 import com.example.issuetracker.service.AuthService;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthServiceImpl implements AuthService {
 
-    @Autowired
-    private UserRepository userRepo;
+	@Autowired
+	private UserRepository userRepo;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+	@Autowired
+	private RefreshTokenRepository refreshTokenRepo;
 
-    @Autowired
-    private JwtTokenProvider jwtTokenProvider;
+	@Autowired
+	private PasswordEncoder passwordEncoder;
 
-    @Override
-    public UserResponse signup(UserCreateRequest request) {
-        if (userRepo.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email already exists.");
-        }
+	@Autowired
+	private JwtTokenProvider jwtTokenProvider;
 
-        if (userRepo.existsByUserId(request.getUserId())) {
-            throw new IllegalArgumentException("User ID already exists.");
-        }
+	@Value("${jwt.refresh-expiration-ms:1209600000}")
+	private long refreshExpirationMs;
 
-        String encodedPassword = passwordEncoder.encode(request.getPassword());
+	@Override
+	public UserResponse signup(UserCreateRequest request) {
+		if (userRepo.existsByEmail(request.getEmail())) {
+			throw new IllegalArgumentException("Email already exists.");
+		}
 
-        User user = new User(
-                request.getName(),
-                request.getEmail(),
-                request.getUserId(),
-                encodedPassword,
-                UserRole.USER
-        );
+		if (userRepo.existsByUserId(request.getUserId())) {
+			throw new IllegalArgumentException("User ID already exists.");
+		}
 
-        User savedUser = userRepo.save(user);
+		String encodedPassword = passwordEncoder.encode(request.getPassword());
 
-        return UserResponse.getUserResponse(savedUser);
-    }
+		User user = new User(request.getName(), request.getEmail(), request.getUserId(), encodedPassword,
+				UserRole.USER);
 
-    @Override
-    public LoginResponse login(LoginRequest request) {
-        User user = userRepo.findByUserId(request.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+		User savedUser = userRepo.save(user);
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new BadCredentialsException("Invalid email or password.");
-        }
+		return UserResponse.getUserResponse(savedUser);
+	}
 
-        String accessToken = jwtTokenProvider.generateToken(new CustomUserDetails(user));
+	@Override
+	@Transactional
+	public LoginResponse login(LoginRequest request) {
+		User user = userRepo.findByUserId(request.getUserId())
+				.orElseThrow(() -> new ResourceNotFoundException("User not found."));
 
-        return new LoginResponse(accessToken, "Bearer");
-    }
+		if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+			throw new BadCredentialsException("Invalid email or password.");
+		}
 
+		String accessToken = jwtTokenProvider.generateToken(new CustomUserDetails(user));
+		String refreshToken = createRefreshToken(user);
+
+		return new LoginResponse(accessToken, refreshToken, "Bearer");
+	}
+
+	@Override
+	@Transactional
+	public LoginResponse refresh(RefreshTokenRequest request) {
+		RefreshToken refreshToken = refreshTokenRepo.findByToken(request.getRefreshToken())
+				.orElseThrow(() -> new BadCredentialsException("Invalid refresh token."));
+
+		if (refreshToken.isExpired()) {
+			refreshTokenRepo.delete(refreshToken);
+			throw new BadCredentialsException("Invalid refresh token.");
+		}
+
+		User user = refreshToken.getUser();
+		String accessToken = jwtTokenProvider.generateToken(new CustomUserDetails(user));
+
+		return new LoginResponse(accessToken, refreshToken.getToken(), "Bearer");
+	}
+
+	@Override
+	@Transactional
+	public void logout(RefreshTokenRequest request) {
+		refreshTokenRepo.deleteByToken(request.getRefreshToken());
+	}
+
+	private String createRefreshToken(User user) {
+		refreshTokenRepo.deleteByUser_Id(user.getId());
+
+		String token = UUID.randomUUID().toString();
+		LocalDateTime expiresAt = LocalDateTime.now().plusNanos(refreshExpirationMs * 1_000_000);
+
+		refreshTokenRepo.save(new RefreshToken(token, user, expiresAt));
+
+		return token;
+	}
 
 }

@@ -39,167 +39,124 @@ import com.example.issuetracker.service.CommentService;
 @AutoConfigureMockMvc(addFilters = false)
 public class CommentControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+	@Autowired
+	private MockMvc mockMvc;
 
-    @MockitoBean
-    private CommentService commentService;
-    
-    @MockitoBean
-    private CustomUserDetailsService customUserDetailsService;
+	@MockitoBean
+	private CommentService commentService;
 
-    @MockitoBean
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
+	@MockitoBean
+	private CustomUserDetailsService customUserDetailsService;
 
-    @MockitoBean
-    private JwtTokenProvider jwtTokenProvider;
+	@MockitoBean
+	private JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @Test
-    void createComment_success() throws Exception {
-        // given
-        String requestBody = """
-                {
-                  "content": "First comment"
-                }
-                """;
+	@MockitoBean
+	private JwtTokenProvider jwtTokenProvider;
 
-        CommentResponse response = createCommentResponse(
-                1L,
-                "First comment",
-                1L
-        );
+	@Test
+	void createComment_success() throws Exception {
+		// given
+		String requestBody = """
+				{
+				  "content": "First comment"
+				}
+				""";
 
-        when(commentService.createComment(eq(1L), any(CommentCreateRequest.class)))
-                .thenReturn(response);
+		CommentResponse response = createCommentResponse(1L, "First comment", 1L);
 
-        // when & then
-        mockMvc.perform(post("/api/issues/{issueId}/comments", 1L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("Comment created successfully"))
-                .andExpect(jsonPath("$.data.id").value(1))
-                .andExpect(jsonPath("$.data.content").value("First comment"))
-                .andExpect(jsonPath("$.data.issueId").value(1));
+		when(commentService.createComment(eq(1L), any(CommentCreateRequest.class))).thenReturn(response);
 
-        verify(commentService).createComment(eq(1L), any(CommentCreateRequest.class));
-    }
+		// when & then
+		mockMvc.perform(
+				post("/api/issues/{issueId}/comments", 1L).contentType(MediaType.APPLICATION_JSON).content(requestBody))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("Comment created successfully"))
+				.andExpect(jsonPath("$.data.id").value(1)).andExpect(jsonPath("$.data.content").value("First comment"))
+				.andExpect(jsonPath("$.data.issueId").value(1));
 
-    @Test
-    void getCommentsByIssue_success() throws Exception {
-        // given
-        CommentResponse comment1 = createCommentResponse(
-                1L,
-                "First comment",
-                1L
-        );
+		verify(commentService).createComment(eq(1L), any(CommentCreateRequest.class));
+	}
 
-        CommentResponse comment2 = createCommentResponse(
-                2L,
-                "Second comment",
-                1L
-        );
+	@Test
+	void getCommentsByIssue_success() throws Exception {
+		// given
+		CommentResponse comment1 = createCommentResponse(1L, "First comment", 1L);
 
-        when(commentService.getCommentsByIssue(1L))
-                .thenReturn(List.of(comment1, comment2));
+		CommentResponse comment2 = createCommentResponse(2L, "Second comment", 1L);
 
-        // when & then
-        mockMvc.perform(get("/api/issues/{issueId}/comments", 1L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("Comments retrieved successfully"))
-                .andExpect(jsonPath("$.data[0].id").value(1))
-                .andExpect(jsonPath("$.data[0].content").value("First comment"))
-                .andExpect(jsonPath("$.data[0].issueId").value(1))
-                .andExpect(jsonPath("$.data[1].id").value(2))
-                .andExpect(jsonPath("$.data[1].content").value("Second comment"))
-                .andExpect(jsonPath("$.data[1].issueId").value(1));
+		when(commentService.getCommentsByIssue(1L)).thenReturn(List.of(comment1, comment2));
 
-        verify(commentService).getCommentsByIssue(1L);
-    }
+		// when & then
+		mockMvc.perform(get("/api/issues/{issueId}/comments", 1L)).andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("Comments retrieved successfully"))
+				.andExpect(jsonPath("$.data[0].id").value(1))
+				.andExpect(jsonPath("$.data[0].content").value("First comment"))
+				.andExpect(jsonPath("$.data[0].issueId").value(1)).andExpect(jsonPath("$.data[1].id").value(2))
+				.andExpect(jsonPath("$.data[1].content").value("Second comment"))
+				.andExpect(jsonPath("$.data[1].issueId").value(1));
 
-    @Test
-    void getComment_success() throws Exception {
-        // given
-        CommentResponse response = createCommentResponse(
-                1L,
-                "First comment",
-                1L
-        );
+		verify(commentService).getCommentsByIssue(1L);
+	}
 
-        when(commentService.getComment(1L))
-                .thenReturn(response);
+	@Test
+	void getComment_success() throws Exception {
+		// given
+		CommentResponse response = createCommentResponse(1L, "First comment", 1L);
 
-        // when & then
-        mockMvc.perform(get("/api/comments/{commentId}", 1L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("Comment retrieved successfully"))
-                .andExpect(jsonPath("$.data.id").value(1))
-                .andExpect(jsonPath("$.data.content").value("First comment"))
-                .andExpect(jsonPath("$.data.issueId").value(1));
+		when(commentService.getComment(1L)).thenReturn(response);
 
-        verify(commentService).getComment(1L);
-    }
+		// when & then
+		mockMvc.perform(get("/api/comments/{commentId}", 1L)).andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("Comment retrieved successfully"))
+				.andExpect(jsonPath("$.data.id").value(1)).andExpect(jsonPath("$.data.content").value("First comment"))
+				.andExpect(jsonPath("$.data.issueId").value(1));
 
-    @Test
-    void updateComment_success() throws Exception {
-        // given
-        String requestBody = """
-                {
-                  "content": "Updated comment"
-                }
-                """;
+		verify(commentService).getComment(1L);
+	}
 
-        CommentResponse response = createCommentResponse(
-                1L,
-                "Updated comment",
-                1L
-        );
+	@Test
+	void updateComment_success() throws Exception {
+		// given
+		String requestBody = """
+				{
+				  "content": "Updated comment"
+				}
+				""";
 
-        when(commentService.updateComment(eq(1L), any(CommentUpdateRequest.class)))
-                .thenReturn(response);
+		CommentResponse response = createCommentResponse(1L, "Updated comment", 1L);
 
-        // when & then
-        mockMvc.perform(put("/api/comments/{commentId}", 1L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("Comment updated successfully"))
-                .andExpect(jsonPath("$.data.id").value(1))
-                .andExpect(jsonPath("$.data.content").value("Updated comment"))
-                .andExpect(jsonPath("$.data.issueId").value(1));
+		when(commentService.updateComment(eq(1L), any(CommentUpdateRequest.class))).thenReturn(response);
 
-        verify(commentService).updateComment(eq(1L), any(CommentUpdateRequest.class));
-    }
+		// when & then
+		mockMvc.perform(
+				put("/api/comments/{commentId}", 1L).contentType(MediaType.APPLICATION_JSON).content(requestBody))
+				.andExpect(status().isOk()).andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("Comment updated successfully"))
+				.andExpect(jsonPath("$.data.id").value(1))
+				.andExpect(jsonPath("$.data.content").value("Updated comment"))
+				.andExpect(jsonPath("$.data.issueId").value(1));
 
-    @Test
-    void deleteComment_success() throws Exception {
-        // given
-        doNothing().when(commentService).deleteComment(1L);
+		verify(commentService).updateComment(eq(1L), any(CommentUpdateRequest.class));
+	}
 
-        // when & then
-        mockMvc.perform(delete("/api/comments/{commentId}", 1L))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("Comment deleted successfully"));
+	@Test
+	void deleteComment_success() throws Exception {
+		// given
+		doNothing().when(commentService).deleteComment(1L);
 
-        verify(commentService).deleteComment(1L);
-    }
+		// when & then
+		mockMvc.perform(delete("/api/comments/{commentId}", 1L)).andExpect(status().isOk())
+				.andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("Comment deleted successfully"));
 
-    private CommentResponse createCommentResponse(
-            Long id,
-            String content,
-            Long issueId
-    ) {
-        return CommentResponse.builder()
-                .id(id)
-                .content(content)
-                .issueId(issueId)
-                .createdAt(LocalDateTime.of(2030, 1, 1, 10, 0))
-                .updatedAt(LocalDateTime.of(2030, 1, 1, 10, 0))
-                .build();
-    }
+		verify(commentService).deleteComment(1L);
+	}
+
+	private CommentResponse createCommentResponse(Long id, String content, Long issueId) {
+		return CommentResponse.builder().id(id).content(content).issueId(issueId)
+				.createdAt(LocalDateTime.of(2030, 1, 1, 10, 0)).updatedAt(LocalDateTime.of(2030, 1, 1, 10, 0)).build();
+	}
 }

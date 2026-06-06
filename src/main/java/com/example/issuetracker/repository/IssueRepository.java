@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+
 @Repository
 public interface IssueRepository extends JpaRepository<Issue, Long> {
 	public List<Issue> findByProject_Id(Long projectId);
@@ -19,9 +20,9 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
 	public List<Issue> findByProject(Project project);
 
 	long countByAssignee_Id(Long userId);
-	
+
 	@Query("""
-			SELECT i FROM Issue i WHERE 
+			SELECT i FROM Issue i WHERE
 			  i.project.id = :projectId
 			  AND (:status IS NULL OR i.status = :status)
 			  AND (:priority IS NULL OR i.priority = :priority)
@@ -32,7 +33,7 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
 			""")
 	public Page<Issue> searchIssuesByProject(@Param("projectId") Long projectId, @Param("status") IssueStatus status,
 			@Param("priority") IssuePriority priority, @Param("keyword") String keyword, Pageable pageable);
-	
+
 	long countByProject_Id(Long projectId);
 
 	long countByProject_IdAndStatus(Long projectId, IssueStatus status);

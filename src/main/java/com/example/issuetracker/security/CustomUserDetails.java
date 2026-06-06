@@ -11,42 +11,42 @@ import java.util.List;
 
 public class CustomUserDetails implements UserDetails {
 
-    private final User user;
+	private final User user;
 
-    public CustomUserDetails(User user) {
-        this.user = user;
-    }
+	public CustomUserDetails(User user) {
+		this.user = user;
+	}
 
-    public Long getId() {
-        return user.getId();
-    }
+	public Long getId() {
+		return user.getId();
+	}
 
-    public String getEmail() {
-        return user.getEmail();
-    }
+	public String getEmail() {
+		return user.getEmail();
+	}
 
-    public String getUserId() {
-        return user.getUserId();
-    }
+	public String getUserId() {
+		return user.getUserId();
+	}
 
-    public User getUser() {
-        return user;
-    }
+	public User getUser() {
+		return user;
+	}
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        UserRole role = user.getRole() == null ? UserRole.USER : user.getRole();
+	@Override
+	public Collection<? extends GrantedAuthority> getAuthorities() {
+		UserRole role = user.getRole() == null ? UserRole.USER : user.getRole();
 
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
-    }
+		return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+	}
 
-    @Override
-    public String getPassword() {
-        return user.getPassword() == null ? "" : user.getPassword();
-    }
+	@Override
+	public String getPassword() {
+		return user.getPassword() == null ? "" : user.getPassword();
+	}
 
-    @Override
-    public String getUsername() {
-        return user.getUserId();
-    }
+	@Override
+	public String getUsername() {
+		return user.getUserId();
+	}
 }

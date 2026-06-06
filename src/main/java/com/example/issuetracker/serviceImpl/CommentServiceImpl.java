@@ -21,9 +21,9 @@ import com.example.issuetracker.service.CommentService;
 @Service
 public class CommentServiceImpl implements CommentService {
 	@Autowired
-	private IssueRepository issueRepo; 
+	private IssueRepository issueRepo;
 	@Autowired
-	private CommentRepository commentRepo ; 
+	private CommentRepository commentRepo;
 	@Autowired
 	private CurrentUserProvider currentUserProvider;
 	@Autowired
@@ -41,7 +41,7 @@ public class CommentServiceImpl implements CommentService {
 		comment.setAuthor(currentUser);
 		Comment savedComment = commentRepo.save(comment);
 
-	    return CommentResponse.responseDto(savedComment);
+		return CommentResponse.responseDto(savedComment);
 	}
 
 	@Override
@@ -65,7 +65,7 @@ public class CommentServiceImpl implements CommentService {
 		requireCommentManager(currentComment);
 		currentComment.setContent(request.getContent());
 		Comment savedComment = commentRepo.save(currentComment);
-	    return CommentResponse.responseDto(savedComment);
+		return CommentResponse.responseDto(savedComment);
 	}
 
 	@Override
@@ -73,7 +73,7 @@ public class CommentServiceImpl implements CommentService {
 		Comment currentComment = findComment(commentId);
 		requireCommentManager(currentComment);
 		commentRepo.delete(currentComment);
-		
+
 	}
 
 	private Issue findIssue(Long issueId) {

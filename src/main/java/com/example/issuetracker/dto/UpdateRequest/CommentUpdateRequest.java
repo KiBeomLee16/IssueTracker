@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class CommentUpdateRequest {
 
-    @NotBlank(message = "Comment content is required")
-    @Size(max = 1000, message = "Comment content must be less than 1000 characters")
-    private String content;
+	@NotBlank(message = "Comment content is required")
+	@Size(max = 1000, message = "Comment content must be less than 1000 characters")
+	private String content;
 }

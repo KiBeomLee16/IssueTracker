@@ -14,46 +14,45 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class User {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @Column(nullable = false)
-    private String password;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
+	@Column(nullable = false)
+	private String password;
 
-    private String name;
+	private String name;
 
-    @Column(nullable = false, unique = true)
-    private String email;
-    
-    @Column(nullable = false, unique = true)
-    private String userId;
+	@Column(nullable = false, unique = true)
+	private String email;
 
-    private LocalDateTime createdAt;
+	@Column(nullable = false, unique = true)
+	private String userId;
 
-    private LocalDateTime updatedAt;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private UserRole role;
+	private LocalDateTime createdAt;
 
-    public User(String name, String email, String userId, String password, UserRole role) {
-        this.name = name;
-        this.email = email;
-        this.userId = userId;
-        this.password = password;
-        this.role = role;
-    }
+	private LocalDateTime updatedAt;
 
-    @PrePersist
-    public void prePersist() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private UserRole role;
 
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
+	public User(String name, String email, String userId, String password, UserRole role) {
+		this.name = name;
+		this.email = email;
+		this.userId = userId;
+		this.password = password;
+		this.role = role;
+	}
+
+	@PrePersist
+	public void prePersist() {
+		this.createdAt = LocalDateTime.now();
+		this.updatedAt = LocalDateTime.now();
+	}
+
+	@PreUpdate
+	public void preUpdate() {
+		this.updatedAt = LocalDateTime.now();
+	}
 }
