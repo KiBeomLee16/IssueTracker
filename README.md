@@ -41,7 +41,7 @@ This project is a personal backend portfolio project. It focuses on practical RE
 | Validation | Jakarta Validation |
 | Security | Spring Security, JWT, BCrypt |
 | API Docs | Swagger / OpenAPI |
-| Testing | JUnit 5, Mockito, MockMvc, Spring Security Test |
+| Testing | JUnit 5, Mockito, MockMvc, Spring Security Test, Testcontainers |
 | Monitoring | Spring Boot Actuator |
 | DevOps | Docker, Docker Compose |
 | CI | GitHub Actions |
@@ -657,11 +657,13 @@ Current test coverage includes:
 - Project member service/controller tests
 - Issue and comment authorization tests
 - Refresh token service/controller tests
+- Testcontainers-based MySQL integration test
+- Flyway migration validation against a real MySQL container
 
 Current test count:
 
 ```text
-101 tests
+102 tests
 ```
 
 ---
@@ -711,7 +713,6 @@ Before deployment:
 - Add file attachments
 - Add labels or tags
 - Add dashboard summary API
-- Add Testcontainers integration tests
 - Add production deployment guide
 - Push Docker image to Docker Hub or GitHub Container Registry
 - Add HTTPS/domain setup notes
