@@ -21,11 +21,17 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.example.issuetracker.dto.UpdateRequest.ProjectUpdateRequest;
 import com.example.issuetracker.dto.request.ProjectCreateRequest;
 import com.example.issuetracker.dto.response.ProjectResponse;
+import com.example.issuetracker.dto.response.ProjectStatsResponse;
+import com.example.issuetracker.entity.IssuePriority;
+import com.example.issuetracker.entity.IssueStatus;
 import com.example.issuetracker.entity.Project;
 import com.example.issuetracker.entity.ProjectMember;
+import com.example.issuetracker.entity.ProjectMemberRole;
 import com.example.issuetracker.entity.User;
 import com.example.issuetracker.entity.UserRole;
 import com.example.issuetracker.exception.ResourceNotFoundException;
+import com.example.issuetracker.repository.CommentRepository;
+import com.example.issuetracker.repository.IssueRepository;
 import com.example.issuetracker.repository.ProjectMemberRepository;
 import com.example.issuetracker.repository.ProjectRepository;
 import com.example.issuetracker.security.CurrentUserProvider;
@@ -37,6 +43,12 @@ public class ProjectServiceImplTest {
 
 	@Mock
 	private ProjectRepository projectRepo;
+
+	@Mock
+	private IssueRepository issueRepo;
+
+	@Mock
+	private CommentRepository commentRepo;
 
 	@InjectMocks
 	private ProjectServiceImpl projectService;
@@ -210,5 +222,43 @@ public class ProjectServiceImplTest {
 		});
 
 		verify(projectRepo).findById(999L);
+	}
+
+	@Test
+	void getProjectStats_success() {
+		// given
+		when(projectRepo.findById(1L)).thenReturn(Optional.of(project));
+		when(issueRepo.countByProject_Id(1L)).thenReturn(10L);
+		when(issueRepo.countByProject_IdAndStatus(1L, IssueStatus.TODO)).thenReturn(3L);
+		when(issueRepo.countByProject_IdAndStatus(1L, IssueStatus.IN_PROGRESS)).thenReturn(4L);
+		when(issueRepo.countByProject_IdAndStatus(1L, IssueStatus.DONE)).thenReturn(3L);
+		when(issueRepo.countByProject_IdAndPriority(1L, IssuePriority.HIGH)).thenReturn(2L);
+		when(issueRepo.countByProject_IdAndPriority(1L, IssuePriority.MEDIUM)).thenReturn(5L);
+		when(issueRepo.countByProject_IdAndPriority(1L, IssuePriority.LOW)).thenReturn(3L);
+		when(commentRepo.countByIssue_Project_Id(1L)).thenReturn(15L);
+		when(projectMemberRepository.countByProject_Id(1L)).thenReturn(4L);
+		when(projectMemberRepository.countByProject_IdAndRole(1L, ProjectMemberRole.OWNER)).thenReturn(1L);
+		when(projectMemberRepository.countByProject_IdAndRole(1L, ProjectMemberRole.MEMBER)).thenReturn(3L);
+		when(issueRepo.countByProject_IdAndAssigneeIsNotNull(1L)).thenReturn(7L);
+		when(issueRepo.countByProject_IdAndAssigneeIsNull(1L)).thenReturn(3L);
+		when(issueRepo.countByProject_IdAndDueDateBeforeAndStatusNot(any(), any(), any())).thenReturn(2L);
+		when(issueRepo.countByProject_IdAndDueDateBetweenAndStatusNot(any(), any(), any(), any())).thenReturn(4L);
+
+		// when
+		ProjectStatsResponse response = projectService.getProjectStats(1L);
+
+		// then
+		assertEquals(1L, response.getProjectId());
+		assertEquals("Issue Tracker", response.getProjectName());
+		assertEquals(10L, response.getTotalIssues());
+		assertEquals(4L, response.getTotalMembers());
+		assertEquals(1L, response.getOwnerCount());
+		assertEquals(3L, response.getMemberCount());
+		assertEquals(7L, response.getAssignedIssueCount());
+		assertEquals(3L, response.getUnassignedIssueCount());
+		assertEquals(2L, response.getOverdueIssueCount());
+		assertEquals(4L, response.getDueSoonIssueCount());
+		assertEquals(30.0, response.getCompletionRate());
+		assertEquals(1.5, response.getAverageCommentsPerIssue());
 	}
 }

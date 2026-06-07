@@ -8,6 +8,7 @@ import com.example.issuetracker.entity.IssuePriority;
 import com.example.issuetracker.entity.IssueStatus;
 import com.example.issuetracker.entity.Project;
 import com.example.issuetracker.entity.ProjectMember;
+import com.example.issuetracker.entity.ProjectMemberRole;
 import com.example.issuetracker.entity.User;
 import com.example.issuetracker.exception.ResourceNotFoundException;
 import com.example.issuetracker.repository.CommentRepository;
@@ -22,6 +23,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -121,7 +123,41 @@ public class ProjectServiceImpl implements ProjectService {
 
 		long totalComments = commentRepo.countByIssue_Project_Id(projectId);
 
+		long totalMembers = projectMemberRepository.countByProject_Id(projectId);
+		long ownerCount = projectMemberRepository.countByProject_IdAndRole(projectId, ProjectMemberRole.OWNER);
+		long memberCount = projectMemberRepository.countByProject_IdAndRole(projectId, ProjectMemberRole.MEMBER);
+
+		long assignedIssueCount = issueRepo.countByProject_IdAndAssigneeIsNotNull(projectId);
+		long unassignedIssueCount = issueRepo.countByProject_IdAndAssigneeIsNull(projectId);
+
+		LocalDate today = LocalDate.now();
+		long overdueIssueCount = issueRepo.countByProject_IdAndDueDateBeforeAndStatusNot(projectId, today,
+				IssueStatus.DONE);
+		long dueSoonIssueCount = issueRepo.countByProject_IdAndDueDateBetweenAndStatusNot(projectId, today,
+				today.plusDays(7), IssueStatus.DONE);
+
+		double completionRate = calculateRate(doneCount, totalIssues);
+		double averageCommentsPerIssue = calculateAverage(totalComments, totalIssues);
+
 		return new ProjectStatsResponse(project.getId(), project.getName(), totalIssues, todoCount, inProgressCount,
-				doneCount, highPriorityCount, mediumPriorityCount, lowPriorityCount, totalComments);
+				doneCount, highPriorityCount, mediumPriorityCount, lowPriorityCount, totalComments, totalMembers,
+				ownerCount, memberCount, assignedIssueCount, unassignedIssueCount, overdueIssueCount, dueSoonIssueCount,
+				completionRate, averageCommentsPerIssue);
+	}
+
+	private double calculateRate(long numerator, long denominator) {
+		if (denominator == 0) {
+			return 0.0;
+		}
+
+		return Math.round((numerator * 10000.0 / denominator)) / 100.0;
+	}
+
+	private double calculateAverage(long numerator, long denominator) {
+		if (denominator == 0) {
+			return 0.0;
+		}
+
+		return Math.round((numerator * 100.0 / denominator)) / 100.0;
 	}
 }

@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Repository
@@ -39,5 +40,14 @@ public interface IssueRepository extends JpaRepository<Issue, Long> {
 	long countByProject_IdAndStatus(Long projectId, IssueStatus status);
 
 	long countByProject_IdAndPriority(Long projectId, IssuePriority priority);
+
+	long countByProject_IdAndAssigneeIsNotNull(Long projectId);
+
+	long countByProject_IdAndAssigneeIsNull(Long projectId);
+
+	long countByProject_IdAndDueDateBeforeAndStatusNot(Long projectId, LocalDate dueDate, IssueStatus status);
+
+	long countByProject_IdAndDueDateBetweenAndStatusNot(Long projectId, LocalDate startDate, LocalDate endDate,
+			IssueStatus status);
 
 }

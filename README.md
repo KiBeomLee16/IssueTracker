@@ -84,6 +84,7 @@ Users can sign up, log in, refresh access tokens, log out, create projects, mana
 - Create, read, update, delete projects
 - Project list filtered by membership for normal users
 - Project stats API
+- Detailed dashboard-style project stats API
 - Project owner/member model
 
 ### Project Member
@@ -274,7 +275,7 @@ erDiagram
 | GET | `/api/projects/{projectId}` | Required | Get project |
 | PUT | `/api/projects/{projectId}` | Required | Update project |
 | DELETE | `/api/projects/{projectId}` | Required | Delete project |
-| GET | `/api/projects/{projectId}/stats` | Required | Get project stats |
+| GET | `/api/projects/{projectId}/stats` | Required | Get detailed project dashboard stats |
 
 ### Project Member API
 
@@ -663,7 +664,7 @@ Current test coverage includes:
 Current test count:
 
 ```text
-102 tests
+103 tests
 ```
 
 ---

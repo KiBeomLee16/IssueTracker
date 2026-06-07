@@ -158,7 +158,14 @@ public class ProjectControllerTest {
 				.andExpect(jsonPath("$.data.projectName").value("Issue Tracker"))
 				.andExpect(jsonPath("$.data.totalIssues").value(10)).andExpect(jsonPath("$.data.todoCount").value(3))
 				.andExpect(jsonPath("$.data.inProgressCount").value(4))
-				.andExpect(jsonPath("$.data.doneCount").value(3));
+				.andExpect(jsonPath("$.data.doneCount").value(3))
+				.andExpect(jsonPath("$.data.totalMembers").value(4))
+				.andExpect(jsonPath("$.data.assignedIssueCount").value(7))
+				.andExpect(jsonPath("$.data.unassignedIssueCount").value(3))
+				.andExpect(jsonPath("$.data.overdueIssueCount").value(2))
+				.andExpect(jsonPath("$.data.dueSoonIssueCount").value(4))
+				.andExpect(jsonPath("$.data.completionRate").value(30.0))
+				.andExpect(jsonPath("$.data.averageCommentsPerIssue").value(1.5));
 	}
 
 	private ProjectResponse createProjectResponse(Long id, String name, String description) {
@@ -172,7 +179,8 @@ public class ProjectControllerTest {
 	}
 
 	private ProjectStatsResponse createProjectStatsResponse() {
-		return new ProjectStatsResponse(1L, "Issue Tracker", 10L, 3L, 4L, 3L, 10L, 3L, 4L, 3L);
+		return new ProjectStatsResponse(1L, "Issue Tracker", 10L, 3L, 4L, 3L, 2L, 5L, 3L, 15L, 4L, 1L,
+				3L, 7L, 3L, 2L, 4L, 30.0, 1.5);
 	}
 
 	private <T> T createInstance(Class<T> clazz) {
