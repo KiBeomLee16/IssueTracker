@@ -2,6 +2,7 @@ package com.example.issuetracker.service;
 
 import com.example.issuetracker.dto.UpdateRequest.IssueStatusUpdateRequest;
 import com.example.issuetracker.dto.UpdateRequest.IssueUpdateRequest;
+import com.example.issuetracker.dto.UpdateRequest.IssueLabelUpdateRequest;
 import com.example.issuetracker.dto.request.IssueAssignRequest;
 import com.example.issuetracker.dto.request.IssueCreateRequest;
 import com.example.issuetracker.dto.response.IssueHistoryResponse;
@@ -32,6 +33,8 @@ public interface IssueService {
 	IssueResponse assignIssue(Long issueId, IssueAssignRequest request);
 
 	IssueResponse unassignIssue(Long issueId);
+
+	IssueResponse updateIssueLabels(Long issueId, IssueLabelUpdateRequest request);
 
 	List<IssueHistoryResponse> getIssueHistories(Long issueId);
 }

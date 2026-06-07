@@ -2,6 +2,9 @@ package com.example.issuetracker.entity;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,7 +15,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -63,6 +68,10 @@ public class Issue {
 	@JoinColumn(name = "author_id", nullable = false)
 	private User author;
 
+	@ManyToMany
+	@JoinTable(name = "issue_labels", joinColumns = @JoinColumn(name = "issue_id"), inverseJoinColumns = @JoinColumn(name = "label_id"))
+	private Set<Label> labels = new LinkedHashSet<>();
+
 	public Issue(String title, String description, IssueStatus status, IssuePriority priority, LocalDate dueDate,
 			Project project) {
 		this.title = title;
@@ -99,5 +108,11 @@ public class Issue {
 		issue.createdAt = LocalDateTime.now();
 		issue.updatedAt = LocalDateTime.now();
 		return issue;
+	}
+
+	public void replaceLabels(Collection<Label> labels) {
+		this.labels.clear();
+		this.labels.addAll(labels);
+		this.updatedAt = LocalDateTime.now();
 	}
 }

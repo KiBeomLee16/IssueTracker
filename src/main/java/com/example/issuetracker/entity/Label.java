@@ -11,40 +11,40 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
-@Table(name = "refresh_tokens")
+@Table(name = "labels", uniqueConstraints = @UniqueConstraint(name = "uk_labels_project_name", columnNames = {
+		"project_id", "name" }))
 @Getter
+@Setter
 @NoArgsConstructor
-public class RefreshToken {
+public class Label {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "token_hash", nullable = false, unique = true, length = 64)
-	private String tokenHash;
-
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "user_id", nullable = false)
-	private User user;
+	@JoinColumn(name = "project_id", nullable = false)
+	private Project project;
 
-	@Column(nullable = false)
-	private LocalDateTime expiresAt;
+	@Column(nullable = false, length = 50)
+	private String name;
+
+	@Column(nullable = false, length = 20)
+	private String color;
 
 	@Column(nullable = false)
 	private LocalDateTime createdAt;
 
-	public RefreshToken(String tokenHash, User user, LocalDateTime expiresAt) {
-		this.tokenHash = tokenHash;
-		this.user = user;
-		this.expiresAt = expiresAt;
+	public Label(Project project, String name, String color) {
+		this.project = project;
+		this.name = name;
+		this.color = color;
 		this.createdAt = LocalDateTime.now();
-	}
-
-	public boolean isExpired() {
-		return expiresAt.isBefore(LocalDateTime.now());
 	}
 }

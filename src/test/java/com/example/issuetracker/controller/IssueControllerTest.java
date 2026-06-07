@@ -31,6 +31,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.example.issuetracker.dto.UpdateRequest.IssueStatusUpdateRequest;
 import com.example.issuetracker.dto.UpdateRequest.IssueUpdateRequest;
+import com.example.issuetracker.dto.UpdateRequest.IssueLabelUpdateRequest;
 import com.example.issuetracker.dto.request.IssueAssignRequest;
 import com.example.issuetracker.dto.request.IssueCreateRequest;
 import com.example.issuetracker.dto.response.IssueResponse;
@@ -277,6 +278,29 @@ public class IssueControllerTest {
 				.andExpect(jsonPath("$.data.id").value(1)).andExpect(jsonPath("$.data.assignee").doesNotExist());
 
 		verify(issueService).unassignIssue(1L);
+	}
+
+	@Test
+	void updateIssueLabels_success() throws Exception {
+		// given
+		String requestBody = """
+				{
+				  "labelIds": [1, 2]
+				}
+				""";
+
+		IssueResponse response = createIssueResponse(1L, 1L, "Login bug", "Login fails with 500 error",
+				IssueStatus.TODO, IssuePriority.HIGH, LocalDate.of(2030, 12, 31), null);
+
+		when(issueService.updateIssueLabels(eq(1L), any(IssueLabelUpdateRequest.class))).thenReturn(response);
+
+		// when & then
+		mockMvc.perform(put("/api/issues/{issueId}/labels", 1L).contentType(MediaType.APPLICATION_JSON)
+				.content(requestBody)).andExpect(status().isOk()).andExpect(jsonPath("$.success").value(true))
+				.andExpect(jsonPath("$.message").value("Issue labels updated successfully."))
+				.andExpect(jsonPath("$.data.id").value(1));
+
+		verify(issueService).updateIssueLabels(eq(1L), any(IssueLabelUpdateRequest.class));
 	}
 
 	private IssueResponse createIssueResponse(Long id, Long projectId, String title, String description,

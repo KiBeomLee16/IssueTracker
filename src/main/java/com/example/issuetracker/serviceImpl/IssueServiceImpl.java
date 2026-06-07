@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.issuetracker.dto.UpdateRequest.IssueStatusUpdateRequest;
 import com.example.issuetracker.dto.UpdateRequest.IssueUpdateRequest;
+import com.example.issuetracker.dto.UpdateRequest.IssueLabelUpdateRequest;
 import com.example.issuetracker.dto.request.IssueAssignRequest;
 import com.example.issuetracker.dto.request.IssueCreateRequest;
 import com.example.issuetracker.dto.response.IssueHistoryResponse;
@@ -22,6 +23,7 @@ import com.example.issuetracker.entity.IssueHistory;
 import com.example.issuetracker.entity.IssueHistoryAction;
 import com.example.issuetracker.entity.IssuePriority;
 import com.example.issuetracker.entity.IssueStatus;
+import com.example.issuetracker.entity.Label;
 import com.example.issuetracker.entity.Project;
 import com.example.issuetracker.entity.User;
 import com.example.issuetracker.exception.ForbiddenException;
@@ -30,6 +32,7 @@ import org.springframework.data.domain.Page;
 
 import com.example.issuetracker.repository.IssueRepository;
 import com.example.issuetracker.repository.IssueHistoryRepository;
+import com.example.issuetracker.repository.LabelRepository;
 import com.example.issuetracker.repository.ProjectRepository;
 import com.example.issuetracker.repository.UserRepository;
 import com.example.issuetracker.response.PageResponse;
@@ -44,6 +47,8 @@ public class IssueServiceImpl implements IssueService {
 	private IssueRepository issueRepo;
 	@Autowired
 	private IssueHistoryRepository issueHistoryRepo;
+	@Autowired
+	private LabelRepository labelRepository;
 	@Autowired
 	private UserRepository userRepo;
 	@Autowired
@@ -203,6 +208,23 @@ public class IssueServiceImpl implements IssueService {
 
 		return issueHistoryRepo.findByIssue_IdOrderByCreatedAtDescIdDesc(issueId).stream()
 				.map(IssueHistoryResponse::new).toList();
+	}
+
+	@Transactional
+	@Override
+	public IssueResponse updateIssueLabels(Long issueId, IssueLabelUpdateRequest request) {
+		Issue issue = findIssue(issueId);
+		requireIssueManager(issue);
+
+		Long projectId = issue.getProject().getId();
+		List<Label> labels = labelRepository.findAllByIdInAndProject_Id(request.getLabelIds(), projectId);
+		if (labels.size() != request.getLabelIds().size()) {
+			throw new IllegalArgumentException("All labels must belong to the issue project.");
+		}
+
+		issue.replaceLabels(labels);
+		Issue savedIssue = issueRepo.save(issue);
+		return IssueResponse.responseDto(savedIssue);
 	}
 
 	private Issue findIssue(Long issueId) {

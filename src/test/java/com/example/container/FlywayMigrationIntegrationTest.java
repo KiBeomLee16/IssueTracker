@@ -58,9 +58,28 @@ class FlywayMigrationIntegrationTest {
 				  AND table_name = 'issue_histories'
 				""", Integer.class);
 
+		Integer labelTableCount = jdbcTemplate.queryForObject("""
+				SELECT COUNT(*)
+				FROM information_schema.tables
+				WHERE table_schema = DATABASE()
+				  AND table_name = 'labels'
+				""", Integer.class);
+
+		Integer issueLabelTableCount = jdbcTemplate.queryForObject("""
+				SELECT COUNT(*)
+				FROM information_schema.tables
+				WHERE table_schema = DATABASE()
+				  AND table_name = 'issue_labels'
+				""", Integer.class);
+
+		Integer labelCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM labels", Integer.class);
+
 		assertThat(userCount).isEqualTo(3);
-		assertThat(migrationCount).isEqualTo(4);
+		assertThat(migrationCount).isEqualTo(6);
 		assertThat(refreshTokenTableCount).isEqualTo(1);
 		assertThat(issueHistoryTableCount).isEqualTo(1);
+		assertThat(labelTableCount).isEqualTo(1);
+		assertThat(issueLabelTableCount).isEqualTo(1);
+		assertThat(labelCount).isEqualTo(3);
 	}
 }

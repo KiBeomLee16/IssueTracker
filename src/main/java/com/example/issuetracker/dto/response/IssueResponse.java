@@ -3,11 +3,14 @@ package com.example.issuetracker.dto.response;
 import com.example.issuetracker.entity.Issue;
 import com.example.issuetracker.entity.IssuePriority;
 import com.example.issuetracker.entity.IssueStatus;
+import com.example.issuetracker.entity.Label;
 
 import lombok.Getter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
 
 @Getter
 
@@ -23,6 +26,7 @@ public class IssueResponse {
 	private final LocalDateTime createdAt;
 	private final LocalDateTime updatedAt;
 	private final UserResponse assignee;
+	private final List<LabelResponse> labels;
 
 	public IssueResponse(Issue issue) {
 		this.id = issue.getId();
@@ -39,6 +43,8 @@ public class IssueResponse {
 		} else {
 			this.assignee = null;
 		}
+		this.labels = issue.getLabels().stream().sorted(Comparator.comparing(Label::getName)).map(LabelResponse::new)
+				.toList();
 	}
 
 	public static IssueResponse responseDto(Issue issue) {

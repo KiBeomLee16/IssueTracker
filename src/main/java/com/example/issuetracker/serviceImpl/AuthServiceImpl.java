@@ -16,7 +16,11 @@ import com.example.issuetracker.security.CustomUserDetails;
 import com.example.issuetracker.security.JwtTokenProvider;
 import com.example.issuetracker.service.AuthService;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.HexFormat;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,7 +87,7 @@ public class AuthServiceImpl implements AuthService {
 	@Override
 	@Transactional
 	public LoginResponse refresh(RefreshTokenRequest request) {
-		RefreshToken refreshToken = refreshTokenRepo.findByToken(request.getRefreshToken())
+		RefreshToken refreshToken = refreshTokenRepo.findByTokenHash(hashToken(request.getRefreshToken()))
 				.orElseThrow(() -> new BadCredentialsException("Invalid refresh token."));
 
 		if (refreshToken.isExpired()) {
@@ -94,13 +98,13 @@ public class AuthServiceImpl implements AuthService {
 		User user = refreshToken.getUser();
 		String accessToken = jwtTokenProvider.generateToken(new CustomUserDetails(user));
 
-		return new LoginResponse(accessToken, refreshToken.getToken(), "Bearer");
+		return new LoginResponse(accessToken, request.getRefreshToken(), "Bearer");
 	}
 
 	@Override
 	@Transactional
 	public void logout(RefreshTokenRequest request) {
-		refreshTokenRepo.deleteByToken(request.getRefreshToken());
+		refreshTokenRepo.deleteByTokenHash(hashToken(request.getRefreshToken()));
 	}
 
 	private String createRefreshToken(User user) {
@@ -109,9 +113,19 @@ public class AuthServiceImpl implements AuthService {
 		String token = UUID.randomUUID().toString();
 		LocalDateTime expiresAt = LocalDateTime.now().plusNanos(refreshExpirationMs * 1_000_000);
 
-		refreshTokenRepo.save(new RefreshToken(token, user, expiresAt));
+		refreshTokenRepo.save(new RefreshToken(hashToken(token), user, expiresAt));
 
 		return token;
+	}
+
+	private String hashToken(String token) {
+		try {
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			byte[] hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+			return HexFormat.of().formatHex(hash);
+		} catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException("SHA-256 algorithm is not available.", e);
+		}
 	}
 
 }

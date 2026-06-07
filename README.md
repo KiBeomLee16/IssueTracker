@@ -1,8 +1,8 @@
 # Issue Tracker REST API
 
-Spring Boot based REST API for managing projects, project members, issues, comments, users, authentication, authorization, token refresh, logout, and issue audit history.
+Spring Boot based REST API for managing projects, project members, issues, labels, comments, users, authentication, authorization, token refresh, logout, and issue audit history.
 
-This project is a personal backend portfolio project. It focuses on practical REST API design, layered architecture, validation, global exception handling, Spring Security, JWT authentication, refresh token management, project-member authorization, issue audit logging, Flyway database migration, testing, Swagger/OpenAPI documentation, Docker, Docker Compose, and CI.
+This project is a personal backend portfolio project. It focuses on practical REST API design, layered architecture, validation, global exception handling, Spring Security, JWT authentication, hashed refresh token management, project-member authorization, issue audit logging, Flyway database migration, testing, Swagger/OpenAPI documentation, Docker, Docker Compose, and CI.
 
 ---
 
@@ -52,7 +52,7 @@ This project is a personal backend portfolio project. It focuses on practical RE
 
 Issue Tracker REST API provides backend features for a project-based issue tracking system.
 
-Users can sign up, log in, refresh access tokens, log out, create projects, manage project members, create issues, assign issues, update issue status, track issue change history, write comments, and view project statistics. The project includes both global role-based authorization and project-level ownership/member authorization.
+Users can sign up, log in, refresh access tokens, log out, create projects, manage project members, create labels, create issues, assign issues, update issue labels and status, track issue change history, write comments, and view project statistics. The project includes both global role-based authorization and project-level ownership/member authorization.
 
 ---
 
@@ -63,8 +63,9 @@ Users can sign up, log in, refresh access tokens, log out, create projects, mana
 - User signup and login
 - BCrypt password encoding
 - JWT access token generation
-- Refresh token storage and access token reissue
+- Hashed refresh token storage and access token reissue
 - Logout by refresh token revocation
+- Scheduled cleanup for expired refresh tokens
 - Stateless Bearer Token authentication
 - Custom authentication and access-denied JSON responses
 - Swagger Bearer Token authorization support
@@ -101,9 +102,17 @@ Users can sign up, log in, refresh access tokens, log out, create projects, mana
 - Search, filter, paginate, and sort issues
 - Issue status update
 - Issue assign and unassign
+- Issue label assignment
 - Issue author tracking
 - Assignee validation against project membership
 - Issue status, priority, assignee, title, description, and due date change history
+
+### Label
+
+- Create and delete project labels
+- List labels by project
+- Attach multiple labels to an issue
+- Validate that issue labels belong to the same project
 
 ### Comment
 
@@ -116,7 +125,7 @@ Users can sign up, log in, refresh access tokens, log out, create projects, mana
 - Common `ApiResponse`
 - Validation and global exception handling
 - Flyway schema migration
-- Seed data for local demo accounts and issue examples
+- Seed data for local demo accounts, issue examples, and labels
 - Dockerfile
 - Docker Compose for app + MySQL
 - Production-oriented Docker Compose file
@@ -140,6 +149,9 @@ Users can sign up, log in, refresh access tokens, log out, create projects, mana
 | Update/delete issue | Issue author, project owner, or `ADMIN` |
 | Update issue status | Issue assignee, project owner, or `ADMIN` |
 | Assign/unassign issue | Project owner or `ADMIN` |
+| Manage project labels | Project owner or `ADMIN` |
+| View project labels | Project member or `ADMIN` |
+| Update issue labels | Issue author, project owner, or `ADMIN` |
 | Create/view comment | Project member or `ADMIN` |
 | Update/delete comment | Comment author, project owner, or `ADMIN` |
 | Access `/api/users/**` | `ADMIN` only |
@@ -174,8 +186,10 @@ MySQL Database
 5. JwtAuthenticationFilter validates the access token
 6. SecurityContext is populated
 7. Client can request a new access token with the refresh token
-8. Logout revokes the stored refresh token
-9. Controller and service authorization rules are applied
+8. Server stores only the hashed refresh token in MySQL
+9. Logout revokes the stored refresh token hash
+10. Expired refresh tokens are cleaned up by scheduler
+11. Controller and service authorization rules are applied
 ```
 
 More architecture notes:
@@ -199,6 +213,8 @@ erDiagram
     USERS ||--o{ ISSUES : authors
     USERS ||--o{ ISSUES : assigned_to
     ISSUES ||--o{ COMMENTS : has
+    PROJECTS ||--o{ LABELS : defines
+    ISSUES }o--o{ LABELS : tagged_with
     USERS ||--o{ COMMENTS : authors
 
     USERS {
@@ -250,6 +266,14 @@ erDiagram
         BIGINT author_id FK
         DATETIME created_at
         DATETIME updated_at
+    }
+
+    LABELS {
+        BIGINT id PK
+        BIGINT project_id FK
+        VARCHAR name
+        VARCHAR color
+        DATETIME created_at
     }
 ```
 
@@ -306,6 +330,7 @@ Add member request:
 | PATCH | `/api/issues/{issueId}/status` | Required | Update issue status |
 | PATCH | `/api/issues/{issueId}/assignee` | Required | Assign issue |
 | DELETE | `/api/issues/{issueId}/assignee` | Required | Unassign issue |
+| PUT | `/api/issues/{issueId}/labels` | Required | Replace issue labels |
 | GET | `/api/issues/{issueId}/histories` | Required | List issue change history |
 
 Create issue request:
@@ -331,6 +356,31 @@ Assign issue request:
 ```json
 {
   "assigneeId": 2
+}
+```
+
+Update issue labels request:
+
+```json
+{
+  "labelIds": [1, 2]
+}
+```
+
+### Label API
+
+| Method | URL | Auth | Description |
+|---|---|---|---|
+| POST | `/api/projects/{projectId}/labels` | Required | Create project label |
+| GET | `/api/projects/{projectId}/labels` | Required | List project labels |
+| DELETE | `/api/labels/{labelId}` | Required | Delete label |
+
+Create label request:
+
+```json
+{
+  "name": "bug",
+  "color": "#dc2626"
 }
 ```
 
@@ -444,6 +494,7 @@ MYSQL_PASSWORD=change-this-db-password
 JWT_SECRET=replace-with-a-secure-random-secret-at-least-32-characters
 JWT_EXPIRATION_MS=3600000
 JWT_REFRESH_EXPIRATION_MS=1209600000
+JWT_REFRESH_CLEANUP_INTERVAL_MS=3600000
 
 DDL_AUTO=validate
 
@@ -610,6 +661,8 @@ src/main/resources/db/migration/V1__insert_table_sql.sql
 src/main/resources/db/migration/V2__insert_sample_data.sql
 src/main/resources/db/migration/V3__create_refresh_tokens.sql
 src/main/resources/db/migration/V4__create_issue_histories.sql
+src/main/resources/db/migration/V5__store_refresh_token_hash.sql
+src/main/resources/db/migration/V6__create_issue_labels.sql
 ```
 
 Flyway naming rule:
@@ -625,6 +678,8 @@ V1__insert_table_sql.sql
 V2__insert_sample_data.sql
 V3__create_refresh_tokens.sql
 V4__create_issue_histories.sql
+V5__store_refresh_token_hash.sql
+V6__create_issue_labels.sql
 ```
 
 Important:
@@ -658,13 +713,15 @@ Current test coverage includes:
 - Project member service/controller tests
 - Issue and comment authorization tests
 - Refresh token service/controller tests
+- Refresh token cleanup scheduler test
+- Label controller and issue label service tests
 - Testcontainers-based MySQL integration test
 - Flyway migration validation against a real MySQL container
 
 Current test count:
 
 ```text
-103 tests
+110 tests
 ```
 
 ---
@@ -712,8 +769,7 @@ Before deployment:
 ## Future Improvements
 
 - Add file attachments
-- Add labels or tags
-- Add dashboard summary API
+- Add notification events for issue changes
 - Add production deployment guide
 - Push Docker image to Docker Hub or GitHub Container Registry
 - Add HTTPS/domain setup notes
@@ -723,4 +779,4 @@ Before deployment:
 
 ## Project Goal
 
-The goal of this project is to demonstrate practical backend development with Java, Spring Boot, JPA, MySQL, REST API design, validation, exception handling, Spring Security, JWT, refresh token management, project-level authorization, issue audit logging, Flyway migration, testing, Swagger documentation, Docker, Docker Compose, CI, and deployment readiness.
+The goal of this project is to demonstrate practical backend development with Java, Spring Boot, JPA, MySQL, REST API design, validation, exception handling, Spring Security, JWT, hashed refresh token management, project-level authorization, issue labels, issue audit logging, Flyway migration, testing, Swagger documentation, Docker, Docker Compose, CI, and deployment readiness.

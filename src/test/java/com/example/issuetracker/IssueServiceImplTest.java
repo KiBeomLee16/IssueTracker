@@ -25,18 +25,21 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import com.example.issuetracker.dto.UpdateRequest.IssueStatusUpdateRequest;
 import com.example.issuetracker.dto.UpdateRequest.IssueUpdateRequest;
+import com.example.issuetracker.dto.UpdateRequest.IssueLabelUpdateRequest;
 import com.example.issuetracker.dto.request.IssueAssignRequest;
 import com.example.issuetracker.dto.request.IssueCreateRequest;
 import com.example.issuetracker.dto.response.IssueResponse;
 import com.example.issuetracker.entity.Issue;
 import com.example.issuetracker.entity.IssuePriority;
 import com.example.issuetracker.entity.IssueStatus;
+import com.example.issuetracker.entity.Label;
 import com.example.issuetracker.entity.Project;
 import com.example.issuetracker.entity.User;
 import com.example.issuetracker.exception.ForbiddenException;
 import com.example.issuetracker.exception.ResourceNotFoundException;
 import com.example.issuetracker.repository.IssueRepository;
 import com.example.issuetracker.repository.IssueHistoryRepository;
+import com.example.issuetracker.repository.LabelRepository;
 import com.example.issuetracker.repository.ProjectRepository;
 import com.example.issuetracker.repository.UserRepository;
 import com.example.issuetracker.security.CurrentUserProvider;
@@ -54,6 +57,9 @@ class IssueServiceImplTest {
 
 	@Mock
 	private IssueHistoryRepository issueHistoryRepo;
+
+	@Mock
+	private LabelRepository labelRepository;
 
 	@Mock
 	private UserRepository userRepo;
@@ -518,6 +524,51 @@ class IssueServiceImplTest {
 		verify(issueRepo).findById(999L);
 	}
 
+	@Test
+	void updateIssueLabels_success() {
+		// given
+		IssueLabelUpdateRequest request = new IssueLabelUpdateRequest();
+		ReflectionTestUtils.setField(request, "labelIds", java.util.Set.of(1L, 2L));
+		Label bug = createLabel(1L, "bug", "#dc2626");
+		Label backend = createLabel(2L, "backend", "#2563eb");
+
+		when(issueRepo.findById(1L)).thenReturn(Optional.of(issue));
+		when(projectAuthorizationService.isProjectOwner(1L)).thenReturn(false);
+		when(currentUserProvider.getCurrentUserId()).thenReturn(1L);
+		when(labelRepository.findAllByIdInAndProject_Id(request.getLabelIds(), 1L)).thenReturn(List.of(bug, backend));
+		when(issueRepo.save(any(Issue.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+		// when
+		IssueResponse response = issueService.updateIssueLabels(1L, request);
+
+		// then
+		assertEquals(2, response.getLabels().size());
+		assertEquals("backend", response.getLabels().get(0).getName());
+		assertEquals("bug", response.getLabels().get(1).getName());
+		verify(labelRepository).findAllByIdInAndProject_Id(request.getLabelIds(), 1L);
+		verify(issueRepo).save(issue);
+	}
+
+	@Test
+	void updateIssueLabels_fail_whenLabelDoesNotBelongToProject() {
+		// given
+		IssueLabelUpdateRequest request = new IssueLabelUpdateRequest();
+		ReflectionTestUtils.setField(request, "labelIds", java.util.Set.of(1L, 999L));
+		Label bug = createLabel(1L, "bug", "#dc2626");
+
+		when(issueRepo.findById(1L)).thenReturn(Optional.of(issue));
+		when(projectAuthorizationService.isProjectOwner(1L)).thenReturn(false);
+		when(currentUserProvider.getCurrentUserId()).thenReturn(1L);
+		when(labelRepository.findAllByIdInAndProject_Id(request.getLabelIds(), 1L)).thenReturn(List.of(bug));
+
+		// when & then
+		assertThrows(IllegalArgumentException.class, () -> {
+			issueService.updateIssueLabels(1L, request);
+		});
+
+		verify(issueRepo, never()).save(any(Issue.class));
+	}
+
 	private Project createProjectEntity() {
 		try {
 			Constructor<Project> constructor = Project.class.getDeclaredConstructor();
@@ -546,5 +597,11 @@ class IssueServiceImplTest {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	private Label createLabel(Long id, String name, String color) {
+		Label label = new Label(project, name, color);
+		ReflectionTestUtils.setField(label, "id", id);
+		return label;
 	}
 }

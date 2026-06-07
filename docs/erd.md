@@ -12,6 +12,8 @@ erDiagram
     USERS ||--o{ ISSUES : authors
     USERS ||--o{ ISSUES : assigned_to
     ISSUES ||--o{ COMMENTS : has
+    PROJECTS ||--o{ LABELS : defines
+    ISSUES }o--o{ LABELS : tagged_with
     USERS ||--o{ COMMENTS : authors
 
     USERS {
@@ -63,6 +65,14 @@ erDiagram
         BIGINT author_id FK
         DATETIME created_at
         DATETIME updated_at
+    }
+
+    LABELS {
+        BIGINT id PK
+        BIGINT project_id FK
+        VARCHAR name
+        VARCHAR color
+        DATETIME created_at
     }
 ```
 
@@ -116,6 +126,22 @@ An issue can have multiple comments.
 ISSUES 1 : N COMMENTS
 ```
 
+### Project - Label
+
+A project can define multiple labels. Label names are unique within a project.
+
+```text
+PROJECTS 1 : N LABELS
+```
+
+### Issue - Label
+
+An issue can have multiple labels, and a label can be attached to multiple issues through `issue_labels`.
+
+```text
+ISSUES N : M LABELS
+```
+
 ### User - Comment Author
 
 A user can author multiple comments. `COMMENTS.author_id` is required.
@@ -136,6 +162,11 @@ USERS 1 : N COMMENTS
 - `COMMENTS.author_id` references `USERS.id` and is required.
 - `PROJECT_MEMBERS.project_id` references `PROJECTS.id`.
 - `PROJECT_MEMBERS.user_id` references `USERS.id`.
+- `LABELS.project_id` references `PROJECTS.id`.
+- `LABELS(project_id, name)` is unique.
+- `ISSUE_LABELS(issue_id, label_id)` is the primary key.
+- `ISSUE_LABELS.issue_id` references `ISSUES.id`.
+- `ISSUE_LABELS.label_id` references `LABELS.id`.
 
 ## Notes
 
@@ -144,3 +175,4 @@ USERS 1 : N COMMENTS
 - `ISSUES.status` is used for issue workflow management.
 - `ISSUES.priority` is used to manage issue priority.
 - `ISSUES.due_date` is used to manage the issue deadline.
+- `LABELS.color` stores a hex color value for API clients.

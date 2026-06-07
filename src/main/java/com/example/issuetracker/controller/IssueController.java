@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.issuetracker.dto.UpdateRequest.IssueStatusUpdateRequest;
 import com.example.issuetracker.dto.UpdateRequest.IssueUpdateRequest;
+import com.example.issuetracker.dto.UpdateRequest.IssueLabelUpdateRequest;
 import com.example.issuetracker.dto.request.IssueAssignRequest;
 import com.example.issuetracker.dto.request.IssueCreateRequest;
 import com.example.issuetracker.dto.response.IssueHistoryResponse;
@@ -110,6 +111,14 @@ public class IssueController {
 		IssueResponse response = issueService.unassignIssue(issueId);
 
 		return ResponseEntity.ok(ApiResponse.success("Issue assignee removed successfully.", response));
+	}
+
+	@PutMapping("/issues/{issueId}/labels")
+	public ResponseEntity<ApiResponse<IssueResponse>> updateIssueLabels(@PathVariable Long issueId,
+			@Valid @RequestBody IssueLabelUpdateRequest request) {
+		IssueResponse response = issueService.updateIssueLabels(issueId, request);
+
+		return ResponseEntity.ok(ApiResponse.success("Issue labels updated successfully.", response));
 	}
 
 	@GetMapping("/issues/{issueId}/histories")

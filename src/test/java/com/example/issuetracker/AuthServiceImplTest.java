@@ -3,15 +3,20 @@ package com.example.issuetracker;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.LocalDateTime;
+import java.util.HexFormat;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -126,6 +131,11 @@ public class AuthServiceImplTest {
 		assertThat(response.getAccessToken()).isEqualTo("test.jwt.token");
 		assertThat(response.getRefreshToken()).isNotBlank();
 		assertThat(response.getTokenType()).isEqualTo("Bearer");
+
+		ArgumentCaptor<RefreshToken> refreshTokenCaptor = ArgumentCaptor.forClass(RefreshToken.class);
+		verify(refreshTokenRepo).save(refreshTokenCaptor.capture());
+		assertThat(refreshTokenCaptor.getValue().getTokenHash()).hasSize(64);
+		assertThat(refreshTokenCaptor.getValue().getTokenHash()).isNotEqualTo(response.getRefreshToken());
 	}
 
 	@Test
@@ -134,9 +144,9 @@ public class AuthServiceImplTest {
 		RefreshTokenRequest request = createRefreshTokenRequest("refresh-token");
 
 		User user = createUser(1L, "John Doe", "john@example.com", "john01", "encodedPassword", UserRole.USER);
-		RefreshToken refreshToken = new RefreshToken("refresh-token", user, LocalDateTime.now().plusDays(1));
+		RefreshToken refreshToken = new RefreshToken(hashToken("refresh-token"), user, LocalDateTime.now().plusDays(1));
 
-		when(refreshTokenRepo.findByToken("refresh-token")).thenReturn(Optional.of(refreshToken));
+		when(refreshTokenRepo.findByTokenHash(hashToken("refresh-token"))).thenReturn(Optional.of(refreshToken));
 		when(jwtTokenProvider.generateToken(any(CustomUserDetails.class))).thenReturn("new.jwt.token");
 
 		// when
@@ -153,7 +163,7 @@ public class AuthServiceImplTest {
 		// given
 		RefreshTokenRequest request = createRefreshTokenRequest("invalid-token");
 
-		when(refreshTokenRepo.findByToken("invalid-token")).thenReturn(Optional.empty());
+		when(refreshTokenRepo.findByTokenHash(hashToken("invalid-token"))).thenReturn(Optional.empty());
 
 		// when & then
 		assertThatThrownBy(() -> authService.refresh(request)).isInstanceOf(BadCredentialsException.class)
@@ -169,7 +179,7 @@ public class AuthServiceImplTest {
 		authService.logout(request);
 
 		// then
-		verify(refreshTokenRepo).deleteByToken("refresh-token");
+		verify(refreshTokenRepo).deleteByTokenHash(eq(hashToken("refresh-token")));
 	}
 
 	@Test
@@ -227,5 +237,14 @@ public class AuthServiceImplTest {
 		User user = new User(name, email, userId, password, role);
 		ReflectionTestUtils.setField(user, "id", id);
 		return user;
+	}
+
+	private String hashToken(String token) {
+		try {
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			return HexFormat.of().formatHex(digest.digest(token.getBytes(StandardCharsets.UTF_8)));
+		} catch (Exception e) {
+			throw new IllegalStateException(e);
+		}
 	}
 }
