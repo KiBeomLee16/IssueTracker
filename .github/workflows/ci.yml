@@ -24,11 +24,15 @@ jobs:
           java-version: '17'
           cache: maven
 
-      - name: Run tests
-        run: mvn -B test
+      - name: Run tests and JaCoCo coverage
+        run: mvn -B verify
 
-      - name: Package application
-        run: mvn -B package -DskipTests
+      - name: Upload JaCoCo report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco
 
       - name: Build Docker image
         run: docker build -t issue-tracker-api:ci .
