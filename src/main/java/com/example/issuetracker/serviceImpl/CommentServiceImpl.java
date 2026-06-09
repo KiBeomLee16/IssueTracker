@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.issuetracker.dto.UpdateRequest.CommentUpdateRequest;
 import com.example.issuetracker.dto.request.CommentCreateRequest;
@@ -19,6 +20,7 @@ import com.example.issuetracker.security.CurrentUserProvider;
 import com.example.issuetracker.service.CommentService;
 
 @Service
+@Transactional(readOnly = true)
 public class CommentServiceImpl implements CommentService {
 	@Autowired
 	private IssueRepository issueRepo;
@@ -30,6 +32,7 @@ public class CommentServiceImpl implements CommentService {
 	private ProjectAuthorizationService projectAuthorizationService;
 
 	@Override
+	@Transactional
 	public CommentResponse createComment(Long issueId, CommentCreateRequest request) {
 		Issue currentIssue = findIssue(issueId);
 		projectAuthorizationService.requireProjectMember(currentIssue.getProject().getId());
@@ -60,6 +63,7 @@ public class CommentServiceImpl implements CommentService {
 	}
 
 	@Override
+	@Transactional
 	public CommentResponse updateComment(Long commentId, CommentUpdateRequest request) {
 		Comment currentComment = findComment(commentId);
 		requireCommentManager(currentComment);
@@ -69,6 +73,7 @@ public class CommentServiceImpl implements CommentService {
 	}
 
 	@Override
+	@Transactional
 	public void deleteComment(Long commentId) {
 		Comment currentComment = findComment(commentId);
 		requireCommentManager(currentComment);

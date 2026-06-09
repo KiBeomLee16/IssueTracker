@@ -74,12 +74,36 @@ class FlywayMigrationIntegrationTest {
 
 		Integer labelCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM labels", Integer.class);
 
+		String commentIssueDeleteRule = jdbcTemplate.queryForObject("""
+				SELECT delete_rule
+				FROM information_schema.referential_constraints
+				WHERE constraint_schema = DATABASE()
+				  AND constraint_name = 'fk_comment_issue'
+				""", String.class);
+
+		String issueProjectDeleteRule = jdbcTemplate.queryForObject("""
+				SELECT delete_rule
+				FROM information_schema.referential_constraints
+				WHERE constraint_schema = DATABASE()
+				  AND constraint_name = 'fk_issue_project'
+				""", String.class);
+
+		String projectMemberProjectDeleteRule = jdbcTemplate.queryForObject("""
+				SELECT delete_rule
+				FROM information_schema.referential_constraints
+				WHERE constraint_schema = DATABASE()
+				  AND constraint_name = 'fk_project_member_project'
+				""", String.class);
+
 		assertThat(userCount).isEqualTo(3);
-		assertThat(migrationCount).isEqualTo(6);
+		assertThat(migrationCount).isEqualTo(7);
 		assertThat(refreshTokenTableCount).isEqualTo(1);
 		assertThat(issueHistoryTableCount).isEqualTo(1);
 		assertThat(labelTableCount).isEqualTo(1);
 		assertThat(issueLabelTableCount).isEqualTo(1);
 		assertThat(labelCount).isEqualTo(3);
+		assertThat(commentIssueDeleteRule).isEqualTo("CASCADE");
+		assertThat(issueProjectDeleteRule).isEqualTo("CASCADE");
+		assertThat(projectMemberProjectDeleteRule).isEqualTo("CASCADE");
 	}
 }
