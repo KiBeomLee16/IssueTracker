@@ -18,10 +18,9 @@ import com.example.issuetracker.repository.ProjectRepository;
 import com.example.issuetracker.security.CurrentUserProvider;
 import com.example.issuetracker.service.ProjectService;
 
-import jakarta.transaction.Transactional;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -60,6 +59,7 @@ public class ProjectServiceImpl implements ProjectService {
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public List<ProjectResponse> getProjects() {
 		if (currentUserProvider.isAdmin()) {
 			return repo.findAll().stream().map(ProjectResponse::new).toList();
@@ -72,6 +72,7 @@ public class ProjectServiceImpl implements ProjectService {
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public ProjectResponse getProject(Long projectId) {
 		projectAuthorizationService.requireProjectMember(projectId);
 
@@ -82,6 +83,7 @@ public class ProjectServiceImpl implements ProjectService {
 	}
 
 	@Override
+	@Transactional
 	public ProjectResponse updateProject(Long projectId, ProjectUpdateRequest request) {
 		projectAuthorizationService.requireProjectOwner(projectId);
 
@@ -96,6 +98,7 @@ public class ProjectServiceImpl implements ProjectService {
 	}
 
 	@Override
+	@Transactional
 	public void deleteProject(Long projectId) {
 		projectAuthorizationService.requireProjectOwner(projectId);
 
@@ -106,6 +109,7 @@ public class ProjectServiceImpl implements ProjectService {
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public ProjectStatsResponse getProjectStats(Long projectId) {
 		projectAuthorizationService.requireProjectMember(projectId);
 		Project project = repo.findById(projectId)
