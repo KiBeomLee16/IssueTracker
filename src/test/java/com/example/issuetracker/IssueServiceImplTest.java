@@ -45,6 +45,20 @@ import com.example.issuetracker.repository.UserRepository;
 import com.example.issuetracker.security.CurrentUserProvider;
 import com.example.issuetracker.serviceImpl.IssueServiceImpl;
 import com.example.issuetracker.serviceImpl.ProjectAuthorizationService;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.anyLong;
+
+import org.mockito.ArgumentCaptor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+
+import com.example.issuetracker.response.PageResponse;
 
 @ExtendWith(MockitoExtension.class)
 class IssueServiceImplTest {
@@ -604,4 +618,68 @@ class IssueServiceImplTest {
 		ReflectionTestUtils.setField(label, "id", id);
 		return label;
 	}
+	
+	
+	@Test
+	void searchIssuesByProject_success_withAscDirectionAndTrimmedKeyword() {
+		// given
+		Long projectId = 1L;
+
+		Page<Issue> issuePage = new PageImpl<>(
+				List.of(issue),
+				PageRequest.of(0, 10, Sort.by(Sort.Direction.ASC, "createdAt")),
+				1
+		);
+
+		when(projectRepo.findById(projectId)).thenReturn(Optional.of(project));
+		when(issueRepo.searchIssuesByProject(
+				eq(projectId),
+				eq(IssueStatus.TODO),
+				eq(IssuePriority.HIGH),
+				eq("bug"),
+				any(Pageable.class)
+		)).thenReturn(issuePage);
+
+		// when
+		PageResponse<IssueResponse> response = issueService.searchIssuesByProject(
+				projectId,
+				IssueStatus.TODO,
+				IssuePriority.HIGH,
+				"  bug  ",
+				0,
+				10,
+				"createdAt",
+				"asc"
+		);
+
+		// then
+		assertEquals(1, response.getContent().size());
+		assertEquals(0, response.getPage());
+		assertEquals(10, response.getSize());
+		assertEquals(1L, response.getTotalElements());
+		assertEquals(1, response.getTotalPages());
+		assertTrue(response.isFirst());
+		assertTrue(response.isLast());
+
+		ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+
+		verify(issueRepo).searchIssuesByProject(
+				eq(projectId),
+				eq(IssueStatus.TODO),
+				eq(IssuePriority.HIGH),
+				eq("bug"),
+				pageableCaptor.capture()
+		);
+
+		Pageable pageable = pageableCaptor.getValue();
+
+		assertEquals(0, pageable.getPageNumber());
+		assertEquals(10, pageable.getPageSize());
+		assertEquals(Sort.Direction.ASC, pageable.getSort().getOrderFor("createdAt").getDirection());
+
+		verify(projectRepo).findById(projectId);
+		verify(projectAuthorizationService).requireProjectMember(projectId);
+	}
+	
+	
 }

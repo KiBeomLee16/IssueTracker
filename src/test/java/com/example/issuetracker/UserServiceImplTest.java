@@ -55,6 +55,41 @@ public class UserServiceImplTest {
 		ReflectionTestUtils.setField(user, "name", "John Doe");
 		ReflectionTestUtils.setField(user, "email", "john@example.com");
 	}
+	
+	@Test
+	void createAdmin_success() {
+		// given
+		UserCreateRequest request = new UserCreateRequest();
+		request.setName("admin");
+		request.setEmail("admin@example.com");
+		request.setUserId("admin01");
+		request.setPassword("password");
+
+		when(userRepo.existsByEmail("admin@example.com")).thenReturn(false);
+
+		when(userRepo.existsByUserId("admin01")).thenReturn(false);
+
+		when(passwordEncoder.encode("password")).thenReturn("encodedPassword");
+
+		User savedUser = new User(
+
+				"admin", "admin@example.com", "admin01", "encodedPassword", UserRole.ADMIN);
+
+		when(userRepo.save(any(User.class))).thenReturn(savedUser);
+
+		// when
+		UserResponse response = userService.createAdmin(request);
+
+		// then
+
+		assertEquals("admin", response.getName());
+		assertEquals("admin@example.com", response.getEmail());
+		assertEquals("admin01", response.getUserId());
+		
+		verify(passwordEncoder).encode("password");
+		verify(userRepo).save(any(User.class));
+	}
+	
 
 	@Test
 	void createUser_success() {
@@ -213,5 +248,64 @@ public class UserServiceImplTest {
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+	
+	@Test
+	void updateUser_fail_whenEmailAlreadyUsedByAnotherUser() {
+		// given
+		Long userId = 1L;
+
+		User currentUser = new User("john", "john@example.com", "john01", "password", UserRole.USER);
+		ReflectionTestUtils.setField(currentUser, "id", userId);
+
+		User foundUser = new User("other", "new@example.com", "other01", "password", UserRole.USER);
+		ReflectionTestUtils.setField(foundUser, "id", 2L);
+
+		UserUpdateRequest request = new UserUpdateRequest();
+		request.setName("john updated");
+		request.setEmail("new@example.com");
+		request.setUserId("john01");
+
+		when(userRepo.findById(userId)).thenReturn(Optional.of(currentUser));
+		when(userRepo.findByEmail("new@example.com")).thenReturn(Optional.of(foundUser));
+
+		// when & then
+		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+			userService.updateUser(userId, request);
+		});
+
+		assertEquals("this email is already registered", exception.getMessage());
+
+	
+	}
+	
+	@Test
+	void updateUser_fail_whenUserIdAlreadyUsedByAnotherUser() {
+		// given
+		Long userId = 1L;
+
+		User currentUser = new User("john", "john@example.com", "john01", "password", UserRole.USER);
+		ReflectionTestUtils.setField(currentUser, "id", userId);
+
+		User foundUser = new User("other", "other@example.com", "newUserId", "password", UserRole.USER);
+		ReflectionTestUtils.setField(foundUser, "id", 2L);
+
+		UserUpdateRequest request = new UserUpdateRequest();
+		request.setName("john updated");
+		request.setEmail("john@example.com");
+		request.setUserId("newUserId");
+
+		when(userRepo.findById(userId)).thenReturn(Optional.of(currentUser));
+		when(userRepo.findByEmail("john@example.com")).thenReturn(Optional.empty());
+		when(userRepo.findByUserId("newUserId")).thenReturn(Optional.of(foundUser));
+
+		// when & then
+		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+			userService.updateUser(userId, request);
+		});
+
+		assertEquals("this ID is already registered", exception.getMessage());
+
+		
 	}
 }

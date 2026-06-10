@@ -58,8 +58,7 @@ public class IssueTrackerApiIntegrationTest {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@Autowired
-	private ObjectMapper objectMapper;
+	private final ObjectMapper objectMapper = new ObjectMapper();
 
 	@Test
 	void ownerMemberIssueWorkflow_success() throws Exception {

@@ -27,6 +27,7 @@ import com.example.issuetracker.entity.IssueStatus;
 import com.example.issuetracker.entity.Project;
 import com.example.issuetracker.entity.ProjectMember;
 import com.example.issuetracker.entity.ProjectMemberRole;
+import com.example.issuetracker.entity.ProjectStatus;
 import com.example.issuetracker.entity.User;
 import com.example.issuetracker.entity.UserRole;
 import com.example.issuetracker.exception.ResourceNotFoundException;
@@ -153,6 +154,38 @@ public class ProjectServiceImplTest {
 		});
 
 		verify(projectRepo).findById(999L);
+	}
+	
+	@Test
+	void getProjects_success_whenUser() {
+		// given
+		Long currentUserId = 1L;
+
+		Project project = new Project("test_project_1", "sample1");
+		ReflectionTestUtils.setField(project, "id", 10L);
+
+		ProjectMember projectMember = new ProjectMember();
+		ReflectionTestUtils.setField(projectMember, "id", 100L);
+		ReflectionTestUtils.setField(projectMember, "project", project);
+
+		when(currentUserProvider.isAdmin()).thenReturn(false);
+		when(currentUserProvider.getCurrentUserId()).thenReturn(currentUserId);
+		when(projectMemberRepository.findAllByUser_Id(currentUserId))
+				.thenReturn(List.of(projectMember));
+
+		// when
+		List<ProjectResponse> result = projectService.getProjects();
+
+		// then
+		assertEquals(1, result.size());
+		assertEquals(10L, result.get(0).getId());
+		assertEquals("test_project_1", result.get(0).getName());
+		assertEquals("sample1", result.get(0).getDescription());
+
+		verify(currentUserProvider).isAdmin();
+		verify(currentUserProvider).getCurrentUserId();
+		verify(projectMemberRepository).findAllByUser_Id(currentUserId);
+
 	}
 
 	@Test
