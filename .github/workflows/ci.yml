@@ -39,7 +39,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: surefire-report
-          path: target/site/surefire-report.html
+          path: target/site/surefire
 
       - name: Build Docker image
         run: docker build -t issue-tracker-api:ci .
