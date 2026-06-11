@@ -41,7 +41,7 @@ This project is a personal backend portfolio project. It focuses on practical RE
 | Validation | Jakarta Validation |
 | Security | Spring Security, JWT, BCrypt |
 | API Docs | Swagger / OpenAPI |
-| Testing | JUnit 5, Mockito, MockMvc, Spring Security Test, Testcontainers |
+| Testing | JUnit 5, Mockito, MockMvc, Spring Security Test, Testcontainers, JaCoCo |
 | Monitoring | Spring Boot Actuator |
 | DevOps | Docker, Docker Compose |
 | CI | GitHub Actions |
@@ -648,6 +648,34 @@ ADMIN_BOOTSTRAP_ENABLED=false
 
 Use `ADMIN_BOOTSTRAP_ENABLED=true` only when bootstrapping the first admin account.
 
+### Smoke Test
+
+After the production compose stack is running, run the smoke test script:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke-test-prod.ps1
+```
+
+PowerShell Core can also run the same script:
+
+```bash
+pwsh ./scripts/smoke-test-prod.ps1
+```
+
+The script loads `/v3/api-docs`, logs in with the demo admin and owner accounts, then exercises the Swagger-exposed API groups for auth, users, projects, project members, labels, issues, issue histories, and comments. It creates temporary smoke-test data and deletes it before finishing.
+
+Expected result:
+
+```text
+TOTAL=46 FAIL=0
+```
+
+To test a deployed server, pass a different base URL and password:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke-test-prod.ps1 -BaseUrl "http://<server-ip>:8080" -Password "<demo-password>"
+```
+
 ---
 
 ## Flyway Migration
@@ -663,6 +691,7 @@ src/main/resources/db/migration/V3__create_refresh_tokens.sql
 src/main/resources/db/migration/V4__create_issue_histories.sql
 src/main/resources/db/migration/V5__store_refresh_token_hash.sql
 src/main/resources/db/migration/V6__create_issue_labels.sql
+src/main/resources/db/migration/V7__add_delete_cascade_for_project_cleanup.sql
 ```
 
 Flyway naming rule:
@@ -680,6 +709,7 @@ V3__create_refresh_tokens.sql
 V4__create_issue_histories.sql
 V5__store_refresh_token_hash.sql
 V6__create_issue_labels.sql
+V7__add_delete_cascade_for_project_cleanup.sql
 ```
 
 Important:
@@ -692,16 +722,24 @@ Important:
 
 ## Testing
 
-Run all tests:
+Run the full verification suite:
 
-```bash
-mvnw.cmd test
+```powershell
+.\mvnw.cmd verify
 ```
 
-or:
+or on macOS/Linux:
 
 ```bash
-./mvnw test
+./mvnw verify
+```
+
+`verify` runs the unit, web-layer, security, integration, Flyway, and JaCoCo checks. Docker Desktop or another Docker Engine must be running for the Testcontainers-based MySQL tests.
+
+For a faster non-Docker check during local iteration:
+
+```powershell
+.\mvnw.cmd test "-Dtest=!FlywayMigrationIntegrationTest,!IssueTrackerApiIntegrationTest"
 ```
 
 Current test coverage includes:
@@ -721,7 +759,7 @@ Current test coverage includes:
 Current test count:
 
 ```text
-110 tests
+124 tests
 ```
 
 ---
@@ -731,15 +769,15 @@ Current test count:
 GitHub Actions workflow verifies:
 
 - Java setup
-- Maven tests
-- Maven package
+- Maven `verify`
+- JaCoCo coverage report
+- Surefire test report
 - Docker image build
 
 Typical commands:
 
 ```bash
-mvn -B test
-mvn -B package -DskipTests
+mvn -B verify
 docker build -t issue-tracker-api:ci .
 ```
 
@@ -750,9 +788,11 @@ docker build -t issue-tracker-api:ci .
 Recommended portfolio deployment path:
 
 ```text
-1. Local Docker Compose
-2. AWS Lightsail, EC2, or low-cost VPS with Docker Compose
-3. Optional Kubernetes practice using k3s, Minikube, kind, or cloud Kubernetes
+1. Run local verification with mvnw.cmd verify
+2. Run docker-compose.prod.yml locally and pass the smoke test script
+3. Deploy to AWS Lightsail, EC2, or a low-cost VPS with Docker Compose
+4. Run the smoke test script against the deployed server URL
+5. Optional Kubernetes practice using k3s, Minikube, kind, or cloud Kubernetes
 ```
 
 Before deployment:
@@ -762,6 +802,8 @@ Before deployment:
 - Keep `.env` out of git
 - Disable admin bootstrap after first setup
 - Confirm `/actuator/health`
+- Confirm `/v3/api-docs`
+- Confirm `scripts/smoke-test-prod.ps1` passes
 - Confirm Docker image build in CI
 
 ---
@@ -770,7 +812,6 @@ Before deployment:
 
 - Add file attachments
 - Add notification events for issue changes
-- Add production deployment guide
 - Push Docker image to Docker Hub or GitHub Container Registry
 - Add HTTPS/domain setup notes
 - Add Kubernetes manifests
