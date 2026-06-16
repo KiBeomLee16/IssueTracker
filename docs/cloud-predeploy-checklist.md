@@ -5,16 +5,17 @@ This checklist should be completed before deploying the Issue Tracker API to AWS
 ## 1. Files and Secrets
 
 - Do not commit `.env`.
-- Commit `.env.example` only.
+- Commit `.env.example` and `.env.prod.example` only.
 - Use strong values for database passwords and `JWT_SECRET` on the server.
 - Do not upload `.env` when sharing the project as a ZIP file.
+- Use `.env.example` for local demo runs and `.env.prod.example` for cloud deployment.
 
 ## 2. Recommended Cloud Compose File
 
 Use `docker-compose.prod.yml` for cloud deployment.
 
 ```bash
-cp .env.example .env
+cp .env.prod.example .env
 # edit .env before running
 
 docker compose -f docker-compose.prod.yml up -d --build
@@ -26,7 +27,33 @@ Why use the production compose file:
 - The Spring Boot application runs with the `prod` profile.
 - Containers restart automatically unless stopped manually.
 
-## 3. Server Firewall Rules
+## 3. Local Verification Before Cloud
+
+Run the full local verification suite before deploying:
+
+Windows:
+
+```powershell
+.\mvnw.cmd verify
+docker compose -f docker-compose.prod.yml up -d --build
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke-test-prod.ps1
+```
+
+macOS/Linux:
+
+```bash
+./mvnw verify
+docker compose -f docker-compose.prod.yml up -d --build
+pwsh ./scripts/smoke-test-prod.ps1
+```
+
+Expected smoke test result:
+
+```text
+TOTAL=46 FAIL=0
+```
+
+## 4. Server Firewall Rules
 
 For the first portfolio deployment, open only the minimum ports:
 
@@ -38,7 +65,7 @@ For the first portfolio deployment, open only the minimum ports:
 
 When you add Nginx and HTTPS later, open `80` and `443`, then close direct public access to `8080`.
 
-## 4. First ADMIN Account
+## 5. First ADMIN Account
 
 Normal signup creates `USER` accounts only.
 
@@ -64,7 +91,7 @@ Then restart the app:
 docker compose -f docker-compose.prod.yml up -d
 ```
 
-## 5. Health Check
+## 6. Health Check
 
 After deployment, verify the app:
 
@@ -85,12 +112,18 @@ Expected response:
 }
 ```
 
-## 6. Swagger Check
+## 7. Swagger and Smoke Check
 
 Swagger UI:
 
 ```text
 http://<server-ip>:8080/swagger-ui/index.html
+```
+
+OpenAPI JSON:
+
+```text
+http://<server-ip>:8080/v3/api-docs
 ```
 
 Test flow:
@@ -101,27 +134,26 @@ Test flow:
 4. Paste the token.
 5. Call a protected API.
 
-## 7. Before Paying for Cloud
+Automated smoke test from your local machine:
 
-Run these commands locally one more time:
-
-```bash
-mvn test
-docker compose up -d --build
-docker compose logs -f app
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\smoke-test-prod.ps1 -BaseUrl "http://<server-ip>:8080" -Password "<demo-password>"
 ```
 
-Then test:
+The script checks health, OpenAPI JSON, auth, users, projects, members, labels, issues, issue histories, comments, and cleanup.
 
-- `/actuator/health`
-- `/swagger-ui/index.html`
-- `/api/auth/signup`
-- `/api/auth/login`
-- Protected API with JWT
-- ADMIN-only API with ADMIN token
-- ADMIN-only API with USER token should return `403`
+## 8. CI Check
 
-## 8. Shutdown to Avoid Cost
+Before treating the deployment as portfolio-ready, confirm the latest GitHub Actions run passes.
+
+The workflow should complete:
+
+- `mvn -B verify`
+- JaCoCo report upload
+- Surefire report upload
+- Docker image build
+
+## 9. Shutdown to Avoid Cost
 
 When you no longer need the server, stop or delete the cloud instance from the cloud provider console.
 

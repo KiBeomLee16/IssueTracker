@@ -1,13 +1,25 @@
 # Issue Tracker REST API
 
+[![Java CI with Maven](https://github.com/KiBeomLee16/IssueTracker/actions/workflows/ci.yml/badge.svg)](https://github.com/KiBeomLee16/IssueTracker/actions/workflows/ci.yml)
+
 Spring Boot based REST API for managing projects, project members, issues, labels, comments, users, authentication, authorization, token refresh, logout, and issue audit history.
 
 This project is a personal backend portfolio project. It focuses on practical REST API design, layered architecture, validation, global exception handling, Spring Security, JWT authentication, hashed refresh token management, project-member authorization, issue audit logging, Flyway database migration, testing, Swagger/OpenAPI documentation, Docker, Docker Compose, and CI.
+
+## Portfolio Snapshot
+
+| Area | Current State |
+|---|---|
+| CI | GitHub Actions runs `mvn -B verify`, uploads JaCoCo/Surefire reports, and builds the Docker image |
+| Production check | `docker-compose.prod.yml` and `scripts/smoke-test-prod.ps1` verified locally with `TOTAL=46 FAIL=0` |
+| API docs | Swagger UI at `/swagger-ui/index.html` and OpenAPI JSON at `/v3/api-docs` |
+| Deployment | Docker Compose cloud deployment ready; start from `.env.prod.example` |
 
 ---
 
 ## Table of Contents
 
+- [Portfolio Snapshot](#portfolio-snapshot)
 - [Tech Stack](#tech-stack)
 - [Project Overview](#project-overview)
 - [Main Features](#main-features)
@@ -480,6 +492,11 @@ Bearer <accessToken>
 
 The Docker Compose files read environment values from `.env`.
 
+Use these templates:
+
+- `.env.example`: local Docker/demo values
+- `.env.prod.example`: cloud or production starting point with placeholder secrets
+
 Example `.env`:
 
 ```env
@@ -637,6 +654,13 @@ Production-like execution uses:
 
 ```bash
 docker compose -f docker-compose.prod.yml up -d --build
+```
+
+For cloud deployment, copy the production template first:
+
+```bash
+cp .env.prod.example .env
+# edit .env before running the compose stack
 ```
 
 Recommended production values:
