@@ -12,7 +12,7 @@ This project is a personal backend portfolio project. It focuses on practical RE
 |---|---|
 | CI | GitHub Actions runs `mvn -B verify`, uploads JaCoCo/Surefire reports, and builds the Docker image |
 | Production check | `docker-compose.prod.yml` and `scripts/smoke-test-prod.ps1` verified locally with `TOTAL=46 FAIL=0` |
-| API docs | Swagger UI at `/swagger-ui/index.html` and OpenAPI JSON at `/v3/api-docs` |
+| API docs | Swagger UI at `/swagger-ui/index.html`, OpenAPI JSON at `/v3/api-docs`, demo console at `/demo/index.html` |
 | Deployment | Docker Compose cloud deployment ready; start from `.env.prod.example` |
 
 ---
@@ -28,6 +28,7 @@ This project is a personal backend portfolio project. It focuses on practical RE
 - [Entity Relationship Diagram](#entity-relationship-diagram)
 - [API Endpoints](#api-endpoints)
 - [Common Response Format](#common-response-format)
+- [Sample Demo UI](#sample-demo-ui)
 - [Environment Variables](#environment-variables)
 - [How to Run Locally](#how-to-run-locally)
 - [Docker Compose](#docker-compose)
@@ -485,6 +486,27 @@ Use the Swagger **Authorize** button with:
 ```text
 Bearer <accessToken>
 ```
+
+---
+
+## Sample Demo UI
+
+A lightweight static demo console is available when the Spring Boot app is running:
+
+```text
+http://localhost:8080/demo/index.html
+```
+
+The demo console supports:
+
+- Quick login with `admin01`, `owner01`, or `member01`
+- Project list and project creation
+- Project stats
+- Issue board by status
+- Issue creation and status updates
+- Issue comments and history
+
+It is intentionally small and uses the same REST API as Swagger. No frontend build step is required.
 
 ---
 

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Issue Tracker API Demo</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Issue Tracker API</p>
+        <h1>Demo Console</h1>
+      </div>
+      <div class="status-strip">
+        <span id="sessionStatus" class="status-pill">Signed out</span>
+        <a class="ghost-link" href="/swagger-ui/index.html" target="_blank" rel="noreferrer">Swagger</a>
+      </div>
+    </header>
+
+    <section class="workspace">
+      <aside class="panel auth-panel" aria-labelledby="loginTitle">
+        <div class="panel-heading">
+          <h2 id="loginTitle">Session</h2>
+          <button id="logoutButton" class="icon-button" type="button" title="Logout">Out</button>
+        </div>
+
+        <form id="loginForm" class="stack">
+          <label>
+            User ID
+            <input id="userIdInput" name="userId" value="owner01" autocomplete="username">
+          </label>
+          <label>
+            Password
+            <input id="passwordInput" name="password" type="password" value="password" autocomplete="current-password">
+          </label>
+          <button class="primary-button" type="submit">Login</button>
+        </form>
+
+        <div class="quick-logins" aria-label="Demo accounts">
+          <button type="button" data-login="admin01">admin01</button>
+          <button type="button" data-login="owner01">owner01</button>
+          <button type="button" data-login="member01">member01</button>
+        </div>
+
+        <div class="message-box" id="messageBox">Ready</div>
+      </aside>
+
+      <section class="panel project-panel" aria-labelledby="projectTitle">
+        <div class="panel-heading">
+          <h2 id="projectTitle">Projects</h2>
+          <button id="refreshProjectsButton" class="ghost-button" type="button">Refresh</button>
+        </div>
+
+        <form id="projectForm" class="inline-form">
+          <input id="projectNameInput" placeholder="New project name" maxlength="80">
+          <button type="submit">Create</button>
+        </form>
+
+        <div id="projectList" class="list"></div>
+      </section>
+
+      <section class="panel stats-panel" aria-labelledby="statsTitle">
+        <div class="panel-heading">
+          <h2 id="statsTitle">Project Stats</h2>
+          <span id="selectedProjectLabel" class="muted">No project</span>
+        </div>
+        <div id="statsGrid" class="stats-grid"></div>
+      </section>
+    </section>
+
+    <section class="board-layout">
+      <section class="panel board-panel" aria-labelledby="boardTitle">
+        <div class="panel-heading">
+          <h2 id="boardTitle">Issue Board</h2>
+          <button id="refreshIssuesButton" class="ghost-button" type="button">Refresh</button>
+        </div>
+
+        <form id="issueForm" class="issue-form">
+          <input id="issueTitleInput" placeholder="Issue title" maxlength="120">
+          <select id="issuePriorityInput">
+            <option value="HIGH">HIGH</option>
+            <option value="MEDIUM" selected>MEDIUM</option>
+            <option value="LOW">LOW</option>
+          </select>
+          <button type="submit">Add Issue</button>
+        </form>
+
+        <div class="board">
+          <div class="lane" data-lane="TODO">
+            <div class="lane-title">TODO</div>
+            <div id="todoIssues" class="issue-list"></div>
+          </div>
+          <div class="lane" data-lane="IN_PROGRESS">
+            <div class="lane-title">IN PROGRESS</div>
+            <div id="progressIssues" class="issue-list"></div>
+          </div>
+          <div class="lane" data-lane="DONE">
+            <div class="lane-title">DONE</div>
+            <div id="doneIssues" class="issue-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel detail-panel" aria-labelledby="detailTitle">
+        <div class="panel-heading">
+          <h2 id="detailTitle">Issue Detail</h2>
+          <span id="selectedIssueLabel" class="muted">No issue</span>
+        </div>
+
+        <div id="issueDetail" class="detail-empty">Select an issue</div>
+
+        <form id="commentForm" class="comment-form">
+          <textarea id="commentInput" placeholder="Comment" rows="3" maxlength="1000"></textarea>
+          <button type="submit">Add Comment</button>
+        </form>
+
+        <div class="subsection">
+          <h3>Comments</h3>
+          <div id="commentList" class="list compact-list"></div>
+        </div>
+
+        <div class="subsection">
+          <h3>History</h3>
+          <div id="historyList" class="list compact-list"></div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>

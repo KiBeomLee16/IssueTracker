@@ -120,6 +120,12 @@ Swagger UI:
 http://<server-ip>:8080/swagger-ui/index.html
 ```
 
+Demo console:
+
+```text
+http://<server-ip>:8080/demo/index.html
+```
+
 OpenAPI JSON:
 
 ```text
