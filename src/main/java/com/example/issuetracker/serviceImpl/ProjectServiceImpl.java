@@ -19,6 +19,7 @@ import com.example.issuetracker.security.CurrentUserProvider;
 import com.example.issuetracker.service.ProjectService;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +45,9 @@ public class ProjectServiceImpl implements ProjectService {
 
 	@Autowired
 	private ProjectAuthorizationService projectAuthorizationService;
+
+	@Autowired
+	private ProjectCacheService projectCacheService;
 
 	@Transactional
 	@Override
@@ -76,14 +80,12 @@ public class ProjectServiceImpl implements ProjectService {
 	public ProjectResponse getProject(Long projectId) {
 		projectAuthorizationService.requireProjectMember(projectId);
 
-		Project project = repo.findById(projectId)
-				.orElseThrow(() -> new ResourceNotFoundException("Project not found. id=" + projectId));
-
-		return new ProjectResponse(project);
+		return projectCacheService.getProject(projectId);
 	}
 
 	@Override
 	@Transactional
+	@CacheEvict(cacheNames = "projectById", key = "#projectId")
 	public ProjectResponse updateProject(Long projectId, ProjectUpdateRequest request) {
 		projectAuthorizationService.requireProjectOwner(projectId);
 
@@ -99,6 +101,7 @@ public class ProjectServiceImpl implements ProjectService {
 
 	@Override
 	@Transactional
+	@CacheEvict(cacheNames = "projectById", key = "#projectId")
 	public void deleteProject(Long projectId) {
 		projectAuthorizationService.requireProjectOwner(projectId);
 

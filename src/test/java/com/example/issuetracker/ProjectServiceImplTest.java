@@ -37,6 +37,7 @@ import com.example.issuetracker.repository.ProjectMemberRepository;
 import com.example.issuetracker.repository.ProjectRepository;
 import com.example.issuetracker.security.CurrentUserProvider;
 import com.example.issuetracker.serviceImpl.ProjectAuthorizationService;
+import com.example.issuetracker.serviceImpl.ProjectCacheService;
 import com.example.issuetracker.serviceImpl.ProjectServiceImpl;
 
 @ExtendWith(MockitoExtension.class)
@@ -64,6 +65,10 @@ public class ProjectServiceImplTest {
 
 	@Mock
 	private ProjectAuthorizationService projectAuthorizationService;
+
+	@Mock
+	private ProjectCacheService projectCacheService;
+
 	private User user;
 
 	@BeforeEach
@@ -130,7 +135,7 @@ public class ProjectServiceImplTest {
 	@Test
 	void getProjectById_success() {
 		// given
-		when(projectRepo.findById(1L)).thenReturn(Optional.of(project));
+		when(projectCacheService.getProject(1L)).thenReturn(new ProjectResponse(project));
 
 		// when
 		ProjectResponse response = projectService.getProject(1L);
@@ -140,20 +145,23 @@ public class ProjectServiceImplTest {
 		assertEquals("Issue Tracker", response.getName());
 		assertEquals("Issue tracker project", response.getDescription());
 
-		verify(projectRepo).findById(1L);
+		verify(projectAuthorizationService).requireProjectMember(1L);
+		verify(projectCacheService).getProject(1L);
 	}
 
 	@Test
 	void getProjectById_notFound() {
 		// given
-		when(projectRepo.findById(999L)).thenReturn(Optional.empty());
+		when(projectCacheService.getProject(999L))
+				.thenThrow(new ResourceNotFoundException("Project not found. id=999"));
 
 		// when & then
 		assertThrows(ResourceNotFoundException.class, () -> {
 			projectService.getProject(999L);
 		});
 
-		verify(projectRepo).findById(999L);
+		verify(projectAuthorizationService).requireProjectMember(999L);
+		verify(projectCacheService).getProject(999L);
 	}
 	
 	@Test

@@ -1,13 +1,18 @@
 package com.example.issuetracker.dto.response;
 
+import java.io.Serial;
+import java.io.Serializable;
+import java.time.LocalDateTime;
+
 import com.example.issuetracker.entity.Project;
 import com.example.issuetracker.entity.ProjectStatus;
 import lombok.Getter;
 
-import java.time.LocalDateTime;
-
 @Getter
-public class ProjectResponse {
+public class ProjectResponse implements Serializable {
+
+	@Serial
+	private static final long serialVersionUID = 1L;
 
 	private final Long id;
 	private final String name;

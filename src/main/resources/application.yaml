@@ -5,6 +5,16 @@ spring:
   application:
     name: issue-tracker-api
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  cache:
+    type: ${CACHE_TYPE:redis}
+    redis:
+      time-to-live: 5m
+
   jpa:
     hibernate:
       ddl-auto: validate

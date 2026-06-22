@@ -34,6 +34,7 @@ This project is a personal backend portfolio project. It focuses on practical RE
 - [Docker Compose](#docker-compose)
 - [Flyway Migration](#flyway-migration)
 - [Testing](#testing)
+- [k6 Load Test](#k6-load-test)
 - [CI](#ci)
 - [Deployment Plan](#deployment-plan)
 - [Future Improvements](#future-improvements)
@@ -50,11 +51,12 @@ This project is a personal backend portfolio project. It focuses on practical RE
 | Web | Spring Web MVC |
 | ORM | Spring Data JPA, Hibernate |
 | Database | MySQL 8 |
+| Cache | Redis, Spring Cache |
 | Migration | Flyway |
 | Validation | Jakarta Validation |
 | Security | Spring Security, JWT, BCrypt |
 | API Docs | Swagger / OpenAPI |
-| Testing | JUnit 5, Mockito, MockMvc, Spring Security Test, Testcontainers, JaCoCo |
+| Testing | JUnit 5, Mockito, MockMvc, Spring Security Test, Testcontainers, JaCoCo, k6 |
 | Monitoring | Spring Boot Actuator |
 | DevOps | Docker, Docker Compose |
 | CI | GitHub Actions |
@@ -805,8 +807,23 @@ Current test coverage includes:
 Current test count:
 
 ```text
-124 tests
+126 tests
 ```
+
+---
+
+## k6 Load Test
+
+The project cache load test ramps to 100 virtual users and compares the same project lookup scenario with `CACHE_TYPE=none` and `CACHE_TYPE=redis`.
+
+Run the short smoke profile first:
+
+```bash
+CACHE_TYPE=redis docker compose up -d --build app
+CACHE_TYPE=redis K6_PROFILE=smoke docker compose --profile load-test run --rm k6
+```
+
+The full scenario and before/after commands are documented in [`scripts/k6/README.md`](scripts/k6/README.md).
 
 ---
 
