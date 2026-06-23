@@ -740,6 +740,8 @@ src/main/resources/db/migration/V4__create_issue_histories.sql
 src/main/resources/db/migration/V5__store_refresh_token_hash.sql
 src/main/resources/db/migration/V6__create_issue_labels.sql
 src/main/resources/db/migration/V7__add_delete_cascade_for_project_cleanup.sql
+src/main/resources/db/migration/V8__expand_demo_issue_data.sql
+src/main/resources/db/migration/V9__add_second_demo_project.sql
 ```
 
 Flyway naming rule:
@@ -758,6 +760,8 @@ V4__create_issue_histories.sql
 V5__store_refresh_token_hash.sql
 V6__create_issue_labels.sql
 V7__add_delete_cascade_for_project_cleanup.sql
+V8__expand_demo_issue_data.sql
+V9__add_second_demo_project.sql
 ```
 
 Important:
@@ -807,7 +811,7 @@ Current test coverage includes:
 Current test count:
 
 ```text
-126 tests
+129 tests
 ```
 
 ---

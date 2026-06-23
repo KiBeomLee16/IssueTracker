@@ -73,6 +73,10 @@ class FlywayMigrationIntegrationTest {
 				""", Integer.class);
 
 		Integer labelCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM labels", Integer.class);
+		Integer projectCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM projects", Integer.class);
+		Integer projectMemberCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM project_members", Integer.class);
+		Integer issueCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM `issue`", Integer.class);
+		Integer issueHistoryCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM issue_histories", Integer.class);
 
 		String commentIssueDeleteRule = jdbcTemplate.queryForObject("""
 				SELECT delete_rule
@@ -96,12 +100,16 @@ class FlywayMigrationIntegrationTest {
 				""", String.class);
 
 		assertThat(userCount).isEqualTo(3);
-		assertThat(migrationCount).isEqualTo(7);
+		assertThat(migrationCount).isEqualTo(9);
 		assertThat(refreshTokenTableCount).isEqualTo(1);
 		assertThat(issueHistoryTableCount).isEqualTo(1);
 		assertThat(labelTableCount).isEqualTo(1);
 		assertThat(issueLabelTableCount).isEqualTo(1);
-		assertThat(labelCount).isEqualTo(3);
+		assertThat(projectCount).isEqualTo(2);
+		assertThat(projectMemberCount).isEqualTo(4);
+		assertThat(labelCount).isEqualTo(8);
+		assertThat(issueCount).isEqualTo(16);
+		assertThat(issueHistoryCount).isEqualTo(6);
 		assertThat(commentIssueDeleteRule).isEqualTo("CASCADE");
 		assertThat(issueProjectDeleteRule).isEqualTo("CASCADE");
 		assertThat(projectMemberProjectDeleteRule).isEqualTo("CASCADE");

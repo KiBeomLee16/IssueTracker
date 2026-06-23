@@ -49,6 +49,30 @@ CACHE_TYPE=redis K6_PROFILE=load docker compose --profile load-test run --rm k6
 
 Run each profile three times in the same environment and compare the median results.
 
+## Latest Local Redis Result
+
+Measured on 2026-06-23 with Docker Compose, `CACHE_TYPE=redis`, `K6_PROFILE=load`, and `PROJECT_ID=1`.
+
+| Metric | Result |
+| --- | ---: |
+| Max virtual users | 100 |
+| Scenario duration | 8m30s |
+| Requests | 39,214 |
+| Throughput | 76.78 req/s |
+| Failure rate | 0.00% |
+| Check success rate | 100.00% |
+| Project lookup avg | 5.30 ms |
+| Project lookup p95 | 8.58 ms |
+| Project lookup p99 | 12.38 ms |
+
+Redis cache behavior was also verified with a temporary project:
+
+- `GET /api/projects/{projectId}` created `projectById::{projectId}`.
+- The cache key received a TTL of about 300 seconds.
+- `PUT /api/projects/{projectId}` evicted the cache key.
+- A second `GET` recreated the cache key.
+- `DELETE /api/projects/{projectId}` evicted the cache key again.
+
 ## Overrides
 
 The Compose service supports these environment variables:

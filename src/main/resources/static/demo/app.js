@@ -5,10 +5,13 @@ const apiBase = window.location.origin && window.location.origin !== "null"
 const state = {
   token: localStorage.getItem("demo.accessToken") || "",
   userId: localStorage.getItem("demo.userId") || "",
+  role: getJwtRole(localStorage.getItem("demo.accessToken") || ""),
   projects: [],
   selectedProjectId: null,
+  projectMembers: [],
   issues: [],
-  selectedIssueId: null
+  selectedIssueId: null,
+  draggedIssueId: null
 };
 
 const els = {
@@ -145,21 +148,60 @@ function renderIssues() {
   state.issues.forEach((issue) => {
     const card = document.createElement("article");
     card.className = `issue-card ${issue.id === state.selectedIssueId ? "active" : ""}`.trim();
+    card.tabIndex = 0;
+    card.draggable = true;
+    card.dataset.issueId = issue.id;
+    card.setAttribute("role", "button");
+    card.setAttribute("aria-label", `Open issue #${issue.id}: ${issue.title}`);
     card.innerHTML = `
       <div class="item-title">${escapeHtml(issue.title)}</div>
       <div class="item-meta">#${issue.id} / ${issue.assignee?.userId || "unassigned"}</div>
       <span class="priority ${issue.priority || "MEDIUM"}">${issue.priority || "MEDIUM"}</span>
       <div class="issue-actions">
-        <button type="button" data-select="${issue.id}">Detail</button>
+        <button type="button" data-select="${issue.id}">Open</button>
         <button type="button" data-status="TODO">TODO</button>
         <button type="button" data-status="IN_PROGRESS">Doing</button>
         <button type="button" data-status="DONE">Done</button>
       </div>
     `;
 
-    card.querySelector("[data-select]").addEventListener("click", () => selectIssue(issue.id));
+    card.addEventListener("click", (event) => {
+      if (event.target.closest("button")) return;
+      selectIssue(issue.id).catch((error) => setMessage(error.message, "error"));
+    });
+
+    card.addEventListener("keydown", (event) => {
+      if ((event.key === "Enter" || event.key === " ") && event.target === card) {
+        event.preventDefault();
+        selectIssue(issue.id).catch((error) => setMessage(error.message, "error"));
+      }
+    });
+
+    card.addEventListener("dragstart", (event) => {
+      state.draggedIssueId = issue.id;
+      card.classList.add("dragging");
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", String(issue.id));
+    });
+
+    card.addEventListener("dragend", () => {
+      state.draggedIssueId = null;
+      card.classList.remove("dragging");
+      document.querySelectorAll(".lane.drag-over").forEach((lane) => lane.classList.remove("drag-over"));
+    });
+
+    card.querySelector("[data-select]").addEventListener("click", (event) => {
+      event.stopPropagation();
+      selectIssue(issue.id).catch((error) => setMessage(error.message, "error"));
+    });
+
     card.querySelectorAll("[data-status]").forEach((button) => {
-      button.addEventListener("click", () => updateIssueStatus(issue.id, button.dataset.status));
+      button.disabled = button.dataset.status === issue.status;
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        updateIssueStatus(issue.id, button.dataset.status)
+          .catch((error) => setMessage(error.message, "error"));
+      });
     });
 
     (targets[issue.status] || targets.TODO).append(card);
@@ -174,17 +216,93 @@ async function renderIssueDetail() {
   if (!issue) {
     els.selectedIssueLabel.textContent = "No issue";
     els.issueDetail.className = "detail-empty";
-    els.issueDetail.textContent = "Select an issue";
+    els.issueDetail.textContent = "Select an issue card";
     return;
   }
+
+  const today = toLocalDateInput(new Date());
+  const dueDate = issue.dueDate && issue.dueDate >= today ? issue.dueDate : "";
+  const labels = (issue.labels || [])
+    .map((label) => `<span class="label-chip">${escapeHtml(label.name)}</span>`)
+    .join("");
+  const canManageAssignee = state.role === "ADMIN"
+    || state.projectMembers.some((member) => member.role === "OWNER" && member.user?.userId === state.userId);
+  const assigneeOptions = [
+    '<option value="">Unassigned</option>',
+    ...state.projectMembers.map((member) => {
+      const selected = member.user?.id === issue.assignee?.id ? "selected" : "";
+      const displayName = `${member.user?.name || member.user?.userId} (${member.user?.userId}) · ${member.role}`;
+      return `<option value="${member.user?.id}" ${selected}>${escapeHtml(displayName)}</option>`;
+    })
+  ].join("");
 
   els.selectedIssueLabel.textContent = `#${issue.id}`;
   els.issueDetail.className = "detail-block";
   els.issueDetail.innerHTML = `
-    <div class="item-title">${escapeHtml(issue.title)}</div>
-    <div class="item-meta">${issue.status} / ${issue.priority || "MEDIUM"}</div>
-    <p>${escapeHtml(issue.description || "No description")}</p>
+    <form class="issue-edit-form" data-issue-edit-form>
+      <label class="full-span">
+        Title
+        <input name="title" value="${escapeHtml(issue.title)}" maxlength="120" required>
+      </label>
+      <label class="full-span">
+        Description
+        <textarea name="description" rows="4" maxlength="2000">${escapeHtml(issue.description || "")}</textarea>
+      </label>
+      <label>
+        Status
+        <select name="status">
+          <option value="TODO" ${issue.status === "TODO" ? "selected" : ""}>TODO</option>
+          <option value="IN_PROGRESS" ${issue.status === "IN_PROGRESS" ? "selected" : ""}>IN PROGRESS</option>
+          <option value="DONE" ${issue.status === "DONE" ? "selected" : ""}>DONE</option>
+        </select>
+      </label>
+      <label>
+        Priority
+        <select name="priority">
+          <option value="HIGH" ${issue.priority === "HIGH" ? "selected" : ""}>HIGH</option>
+          <option value="MEDIUM" ${issue.priority === "MEDIUM" ? "selected" : ""}>MEDIUM</option>
+          <option value="LOW" ${issue.priority === "LOW" ? "selected" : ""}>LOW</option>
+        </select>
+      </label>
+      <label>
+        Due date
+        <input name="dueDate" type="date" min="${today}" value="${dueDate}">
+      </label>
+      <label class="assignee-control">
+        Assignee
+        <select name="assigneeId" ${canManageAssignee ? "" : "disabled"}>
+          ${assigneeOptions}
+        </select>
+        ${canManageAssignee ? "" : '<small>Only an admin or this project owner can change the assignee.</small>'}
+      </label>
+      <div class="label-row full-span">${labels || '<span class="muted">No labels</span>'}</div>
+      <div class="detail-actions full-span">
+        <button class="primary-button" type="submit">Save changes</button>
+      </div>
+    </form>
   `;
+
+  const editForm = els.issueDetail.querySelector("[data-issue-edit-form]");
+  editForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submitButton = editForm.querySelector("button[type='submit']");
+    submitButton.disabled = true;
+
+    try {
+      await updateIssue(issue.id, {
+        title: editForm.elements.title.value.trim(),
+        description: editForm.elements.description.value.trim(),
+        status: editForm.elements.status.value,
+        priority: editForm.elements.priority.value,
+        dueDate: editForm.elements.dueDate.value || null
+      }, canManageAssignee
+        ? (editForm.elements.assigneeId.value ? Number(editForm.elements.assigneeId.value) : null)
+        : undefined);
+    } catch (error) {
+      setMessage(error.message, "error");
+      submitButton.disabled = false;
+    }
+  });
 
   await Promise.all([loadComments(issue.id), loadHistory(issue.id)]);
 }
@@ -197,6 +315,7 @@ async function login(userId, password) {
 
   state.token = data.accessToken;
   state.userId = userId;
+  state.role = getJwtRole(data.accessToken);
   localStorage.setItem("demo.accessToken", state.token);
   localStorage.setItem("demo.userId", state.userId);
   renderSession();
@@ -207,8 +326,10 @@ async function login(userId, password) {
 function logout() {
   state.token = "";
   state.userId = "";
+  state.role = "";
   state.projects = [];
   state.issues = [];
+  state.projectMembers = [];
   state.selectedProjectId = null;
   state.selectedIssueId = null;
   localStorage.removeItem("demo.accessToken");
@@ -241,17 +362,22 @@ async function loadProjects() {
   }
 }
 
-async function selectProject(projectId) {
+async function selectProject(projectId, preferredIssueId = null) {
   state.selectedProjectId = Number(projectId);
-  state.selectedIssueId = null;
+  state.selectedIssueId = preferredIssueId === null ? null : Number(preferredIssueId);
   renderProjects();
 
-  const [stats, issues] = await Promise.all([
+  const [stats, issues, projectMembers] = await Promise.all([
     api(`/api/projects/${state.selectedProjectId}/stats`),
-    api(`/api/projects/${state.selectedProjectId}/issues`)
+    api(`/api/projects/${state.selectedProjectId}/issues`),
+    api(`/api/projects/${state.selectedProjectId}/members`)
   ]);
 
   state.issues = issues || [];
+  state.projectMembers = projectMembers || [];
+  if (state.selectedIssueId && !state.issues.some((issue) => issue.id === state.selectedIssueId)) {
+    state.selectedIssueId = null;
+  }
   renderStats(stats);
   renderIssues();
   await renderIssueDetail();
@@ -297,15 +423,45 @@ async function createIssue(title, priority) {
 }
 
 async function updateIssueStatus(issueId, status) {
+  const issue = state.issues.find((item) => item.id === Number(issueId));
+  if (issue?.status === status) {
+    await selectIssue(issueId);
+    return;
+  }
+
   await api(`/api/issues/${issueId}/status`, {
     method: "PATCH",
     body: JSON.stringify({ status })
   });
   setMessage(`Issue moved to ${status}`, "success");
-  await selectProject(state.selectedProjectId);
-  state.selectedIssueId = Number(issueId);
-  renderIssues();
-  await renderIssueDetail();
+  await selectProject(state.selectedProjectId, issueId);
+}
+
+async function updateIssue(issueId, values, assigneeId = undefined) {
+  if (!values.title) {
+    throw new Error("Issue title is required");
+  }
+
+  const currentAssigneeId = getSelectedIssue()?.assignee?.id ?? null;
+
+  await api(`/api/issues/${issueId}`, {
+    method: "PUT",
+    body: JSON.stringify(values)
+  });
+
+  if (assigneeId !== undefined && assigneeId !== currentAssigneeId) {
+    if (assigneeId === null) {
+      await api(`/api/issues/${issueId}/assignee`, { method: "DELETE" });
+    } else {
+      await api(`/api/issues/${issueId}/assignee`, {
+        method: "PATCH",
+        body: JSON.stringify({ assigneeId })
+      });
+    }
+  }
+
+  setMessage("Issue updated", "success");
+  await selectProject(state.selectedProjectId, issueId);
 }
 
 async function selectIssue(issueId) {
@@ -333,7 +489,7 @@ async function createComment(content) {
 async function loadComments(issueId) {
   const comments = await api(`/api/issues/${issueId}/comments`);
   els.commentList.replaceChildren();
-  comments.forEach((comment) => {
+  (comments || []).forEach((comment) => {
     const item = document.createElement("div");
     item.className = "comment-item";
     item.innerHTML = `
@@ -347,7 +503,7 @@ async function loadComments(issueId) {
 async function loadHistory(issueId) {
   const histories = await api(`/api/issues/${issueId}/histories`);
   els.historyList.replaceChildren();
-  histories.slice().reverse().forEach((history) => {
+  (histories || []).slice().reverse().forEach((history) => {
     const item = document.createElement("div");
     item.className = "history-item";
     item.innerHTML = `
@@ -356,6 +512,28 @@ async function loadHistory(issueId) {
     `;
     els.historyList.append(item);
   });
+}
+
+function toLocalDateInput(date) {
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return localDate.toISOString().slice(0, 10);
+}
+
+function getJwtRole(token) {
+  if (!token) return "";
+
+  try {
+    const payload = token.split(".")[1];
+    const normalized = payload.replaceAll("-", "+").replaceAll("_", "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    const decoded = decodeURIComponent(atob(padded)
+      .split("")
+      .map((character) => `%${character.charCodeAt(0).toString(16).padStart(2, "0")}`)
+      .join(""));
+    return JSON.parse(decoded).role || "";
+  } catch (error) {
+    return "";
+  }
 }
 
 function escapeHtml(value) {
@@ -393,8 +571,34 @@ function wireEvents() {
   els.refreshProjectsButton.addEventListener("click", () => loadProjects().catch((error) => setMessage(error.message, "error")));
   els.refreshIssuesButton.addEventListener("click", () => {
     if (state.selectedProjectId) {
-      selectProject(state.selectedProjectId).catch((error) => setMessage(error.message, "error"));
+      selectProject(state.selectedProjectId, state.selectedIssueId)
+        .catch((error) => setMessage(error.message, "error"));
     }
+  });
+
+  document.querySelectorAll("[data-lane]").forEach((lane) => {
+    lane.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      lane.classList.add("drag-over");
+    });
+
+    lane.addEventListener("dragleave", (event) => {
+      if (!lane.contains(event.relatedTarget)) {
+        lane.classList.remove("drag-over");
+      }
+    });
+
+    lane.addEventListener("drop", (event) => {
+      event.preventDefault();
+      lane.classList.remove("drag-over");
+
+      const issueId = Number(event.dataTransfer.getData("text/plain") || state.draggedIssueId);
+      if (!issueId) return;
+
+      updateIssueStatus(issueId, lane.dataset.lane)
+        .catch((error) => setMessage(error.message, "error"));
+    });
   });
 
   els.projectForm.addEventListener("submit", async (event) => {
