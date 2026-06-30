@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: issue-tracker-config
+  namespace: issue-tracker
+data:
+  SPRING_PROFILES_ACTIVE: docker
+  TZ: Asia/Seoul
+
+  MYSQL_DATABASE: issue_tracker
+  MYSQL_USER: issue_user
+  DB_URL: jdbc:mysql://mysql:3306/issue_tracker?serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&useSSL=false
+  DB_USERNAME: issue_user
+
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  CACHE_TYPE: redis
+
+  JWT_EXPIRATION_MS: "3600000"
+  JWT_REFRESH_EXPIRATION_MS: "1209600000"
+  JWT_REFRESH_CLEANUP_INTERVAL_MS: "3600000"

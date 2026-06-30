@@ -36,3 +36,4 @@ build/
 .env.*
 !.env.example
 !.env.prod.example
+k8s/secret.yaml

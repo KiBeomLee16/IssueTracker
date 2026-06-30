@@ -1,0 +1,106 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-data
+  namespace: issue-tracker
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: issue-tracker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - --character-set-server=utf8mb4
+            - --collation-server=utf8mb4_unicode_ci
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: issue-tracker-secret
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: issue-tracker-config
+                  key: MYSQL_DATABASE
+            - name: MYSQL_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: issue-tracker-config
+                  key: MYSQL_USER
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: issue-tracker-secret
+                  key: MYSQL_PASSWORD
+            - name: TZ
+              valueFrom:
+                configMapKeyRef:
+                  name: issue-tracker-config
+                  key: TZ
+          ports:
+            - containerPort: 3306
+          startupProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - mysqladmin ping -h 127.0.0.1 -uroot -p$MYSQL_ROOT_PASSWORD
+            periodSeconds: 5
+            failureThreshold: 30
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - mysqladmin ping -h 127.0.0.1 -uroot -p$MYSQL_ROOT_PASSWORD
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - mysqladmin ping -h 127.0.0.1 -uroot -p$MYSQL_ROOT_PASSWORD
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: mysql-data
+          persistentVolumeClaim:
+            claimName: mysql-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: issue-tracker
+spec:
+  selector:
+    app: mysql
+  ports:
+    - name: mysql
+      port: 3306
+      targetPort: 3306

@@ -672,6 +672,31 @@ The host `MYSQL_PORT` is only for local tools such as MySQL Workbench or DBeaver
 
 ---
 
+## Local Kubernetes
+
+The project also includes local Kubernetes manifests under [`k8s/`](k8s/). This is intended as a local practice deployment in addition to Docker Compose.
+
+```bash
+docker build -t issue-tracker-api:local .
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/secret.example.yaml
+kubectl apply -f k8s/mysql.yaml
+kubectl apply -f k8s/redis.yaml
+kubectl apply -f k8s/app.yaml
+kubectl -n issue-tracker port-forward svc/issue-tracker-api 8080:8080
+```
+
+Then open:
+
+- `http://localhost:8080/actuator/health`
+- `http://localhost:8080/swagger-ui/index.html`
+- `http://localhost:8080/demo/index.html`
+
+See [`k8s/README.md`](k8s/README.md) for Docker Desktop Kubernetes and kind setup notes.
+
+---
+
 ## Production Compose
 
 Production-like execution uses:
@@ -859,7 +884,7 @@ Recommended portfolio deployment path:
 2. Run docker-compose.prod.yml locally and pass the smoke test script
 3. Deploy to AWS Lightsail, EC2, or a low-cost VPS with Docker Compose
 4. Run the smoke test script against the deployed server URL
-5. Optional Kubernetes practice using k3s, Minikube, kind, or cloud Kubernetes
+5. Optional Kubernetes practice using the local k8s manifests, k3s, kind, or cloud Kubernetes
 ```
 
 Before deployment:
@@ -881,7 +906,7 @@ Before deployment:
 - Add notification events for issue changes
 - Push Docker image to Docker Hub or GitHub Container Registry
 - Add HTTPS/domain setup notes
-- Add Kubernetes manifests
+- Add Kubernetes Ingress or Helm chart
 
 ---
 
