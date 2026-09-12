@@ -32,7 +32,6 @@ import com.example.issuetracker.dto.response.UserResponse;
 import com.example.issuetracker.entity.RefreshToken;
 import com.example.issuetracker.entity.User;
 import com.example.issuetracker.entity.UserRole;
-import com.example.issuetracker.exception.ResourceNotFoundException;
 import com.example.issuetracker.repository.RefreshTokenRepository;
 import com.example.issuetracker.repository.UserRepository;
 import com.example.issuetracker.security.CustomUserDetails;
@@ -154,8 +153,16 @@ public class AuthServiceImplTest {
 
 		// then
 		assertThat(response.getAccessToken()).isEqualTo("new.jwt.token");
-		assertThat(response.getRefreshToken()).isEqualTo("refresh-token");
+		assertThat(response.getRefreshToken()).isNotBlank();
+		assertThat(response.getRefreshToken()).isNotEqualTo("refresh-token");
 		assertThat(response.getTokenType()).isEqualTo("Bearer");
+
+		verify(refreshTokenRepo).delete(refreshToken);
+
+		ArgumentCaptor<RefreshToken> refreshTokenCaptor = ArgumentCaptor.forClass(RefreshToken.class);
+		verify(refreshTokenRepo).save(refreshTokenCaptor.capture());
+		assertThat(refreshTokenCaptor.getValue().getTokenHash()).hasSize(64);
+		assertThat(refreshTokenCaptor.getValue().getTokenHash()).isEqualTo(hashToken(response.getRefreshToken()));
 	}
 
 	@Test
@@ -190,8 +197,8 @@ public class AuthServiceImplTest {
 		when(userRepo.findByUserId("unknown")).thenReturn(Optional.empty());
 
 		// when & then
-		assertThatThrownBy(() -> authService.login(request)).isInstanceOf(ResourceNotFoundException.class)
-				.hasMessage("User not found.");
+		assertThatThrownBy(() -> authService.login(request)).isInstanceOf(BadCredentialsException.class)
+				.hasMessage("Invalid userId or password.");
 	}
 
 	@Test
@@ -206,7 +213,7 @@ public class AuthServiceImplTest {
 
 		// when & then
 		assertThatThrownBy(() -> authService.login(request)).isInstanceOf(BadCredentialsException.class)
-				.hasMessage("Invalid email or password.");
+				.hasMessage("Invalid userId or password.");
 
 		verify(jwtTokenProvider, never()).generateToken(any(CustomUserDetails.class));
 	}

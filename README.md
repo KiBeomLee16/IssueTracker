@@ -78,7 +78,7 @@ Users can sign up, log in, refresh access tokens, log out, create projects, mana
 - User signup and login
 - BCrypt password encoding
 - JWT access token generation
-- Hashed refresh token storage and access token reissue
+- Hashed refresh token storage and refresh token rotation
 - Logout by refresh token revocation
 - Scheduled cleanup for expired refresh tokens
 - Stateless Bearer Token authentication
@@ -200,11 +200,12 @@ MySQL Database
 4. Client sends Authorization: Bearer <accessToken>
 5. JwtAuthenticationFilter validates the access token
 6. SecurityContext is populated
-7. Client can request a new access token with the refresh token
-8. Server stores only the hashed refresh token in MySQL
-9. Logout revokes the stored refresh token hash
-10. Expired refresh tokens are cleaned up by scheduler
-11. Controller and service authorization rules are applied
+7. Client can request new access and refresh tokens with the current refresh token
+8. Server validates the stored refresh token hash and rotates it
+9. Server stores only the new hashed refresh token in MySQL
+10. Logout revokes the stored refresh token hash
+11. Expired refresh tokens are cleaned up by scheduler
+12. Controller and service authorization rules are applied
 ```
 
 More architecture notes:
@@ -302,8 +303,41 @@ erDiagram
 |---|---|---|---|
 | POST | `/api/auth/signup` | Public | Sign up |
 | POST | `/api/auth/login` | Public | Login and receive access/refresh tokens |
-| POST | `/api/auth/refresh` | Public | Reissue access token with refresh token |
+| POST | `/api/auth/refresh` | Public | Rotate refresh token and reissue access token |
 | POST | `/api/auth/logout` | Public | Revoke refresh token |
+
+Refresh token rotation flow:
+
+```text
+1. Login returns accessToken A1 and refreshToken R1.
+2. POST /api/auth/refresh with R1.
+3. Server deletes the stored hash for R1.
+4. Server returns accessToken A2 and refreshToken R2.
+5. R1 can no longer be used.
+6. Future refresh requests must use R2.
+```
+
+Refresh request:
+
+```json
+{
+  "refreshToken": "current-refresh-token"
+}
+```
+
+Refresh success response:
+
+```json
+{
+  "success": true,
+  "message": "Token refreshed successfully.",
+  "data": {
+    "accessToken": "new-access-token",
+    "refreshToken": "new-refresh-token",
+    "tokenType": "Bearer"
+  }
+}
+```
 
 ### Project API
 
@@ -461,11 +495,13 @@ Error:
 
 Authentication and authorization errors:
 
-| Case | Status |
-|---|---|
-| Missing token | `401 Unauthorized` |
-| Invalid or expired token | `401 Unauthorized` |
-| Insufficient role or permission | `403 Forbidden` |
+| Case | Status | Message |
+|---|---|---|
+| Login with invalid credentials | `401 Unauthorized` | `Invalid userId or password.` |
+| Refresh with invalid, expired, or already rotated refresh token | `401 Unauthorized` | `Invalid refresh token.` |
+| Missing access token on protected API | `401 Unauthorized` | `Authentication required.` |
+| Invalid or expired access token | `401 Unauthorized` | `Invalid or expired token.` |
+| Insufficient role or project permission | `403 Forbidden` | `Access denied.` or permission-specific message |
 
 ---
 
@@ -912,4 +948,4 @@ Before deployment:
 
 ## Project Goal
 
-The goal of this project is to demonstrate practical backend development with Java, Spring Boot, JPA, MySQL, REST API design, validation, exception handling, Spring Security, JWT, hashed refresh token management, project-level authorization, issue labels, issue audit logging, Flyway migration, testing, Swagger documentation, Docker, Docker Compose, CI, and deployment readiness.
+The goal of this project is to demonstrate practical backend development with Java, Spring Boot, JPA, MySQL, REST API design, validation, exception handling, Spring Security, JWT, hashed refresh token rotation, project-level authorization, issue labels, issue audit logging, Flyway migration, testing, Swagger documentation, Docker, Docker Compose, CI, and deployment readiness.

@@ -9,7 +9,6 @@ import com.example.issuetracker.entity.RefreshToken;
 import com.example.issuetracker.entity.User;
 import com.example.issuetracker.entity.UserRole;
 
-import com.example.issuetracker.exception.ResourceNotFoundException;
 import com.example.issuetracker.repository.RefreshTokenRepository;
 import com.example.issuetracker.repository.UserRepository;
 import com.example.issuetracker.security.CustomUserDetails;
@@ -72,10 +71,10 @@ public class AuthServiceImpl implements AuthService {
 	@Transactional
 	public LoginResponse login(LoginRequest request) {
 		User user = userRepo.findByUserId(request.getUserId())
-				.orElseThrow(() -> new ResourceNotFoundException("User not found."));
+				.orElseThrow(() -> new BadCredentialsException("Invalid userId or password."));
 
 		if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-			throw new BadCredentialsException("Invalid email or password.");
+			throw new BadCredentialsException("Invalid userId or password.");
 		}
 
 		String accessToken = jwtTokenProvider.generateToken(new CustomUserDetails(user));
@@ -97,8 +96,9 @@ public class AuthServiceImpl implements AuthService {
 
 		User user = refreshToken.getUser();
 		String accessToken = jwtTokenProvider.generateToken(new CustomUserDetails(user));
+		String newRefreshToken = rotateRefreshToken(refreshToken);
 
-		return new LoginResponse(accessToken, request.getRefreshToken(), "Bearer");
+		return new LoginResponse(accessToken, newRefreshToken, "Bearer");
 	}
 
 	@Override
@@ -110,6 +110,17 @@ public class AuthServiceImpl implements AuthService {
 	private String createRefreshToken(User user) {
 		refreshTokenRepo.deleteByUser_Id(user.getId());
 
+		return saveRefreshToken(user);
+	}
+
+	private String rotateRefreshToken(RefreshToken refreshToken) {
+		User user = refreshToken.getUser();
+		refreshTokenRepo.delete(refreshToken);
+
+		return saveRefreshToken(user);
+	}
+
+	private String saveRefreshToken(User user) {
 		String token = UUID.randomUUID().toString();
 		LocalDateTime expiresAt = LocalDateTime.now().plusNanos(refreshExpirationMs * 1_000_000);
 

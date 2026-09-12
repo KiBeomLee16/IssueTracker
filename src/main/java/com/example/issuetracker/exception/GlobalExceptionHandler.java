@@ -66,7 +66,12 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(BadCredentialsException.class)
 	public ResponseEntity<ApiResponse<Void>> handleBadCredentialsException(BadCredentialsException ex) {
-		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.fail("Invalid userId or password."));
+		String message = ex.getMessage();
+		if (message == null || message.isBlank()) {
+			message = "Authentication failed.";
+		}
+
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.fail(message));
 	}
 
 	@ExceptionHandler(ForbiddenException.class)

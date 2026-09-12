@@ -155,12 +155,30 @@ public class AuthControllerTest {
 				""";
 
 		when(authService.login(any(LoginRequest.class)))
-				.thenThrow(new BadCredentialsException("Invalid email or password."));
+				.thenThrow(new BadCredentialsException("Invalid userId or password."));
 
 		// when & then
 		mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(requestBody))
 				.andExpect(status().isUnauthorized()).andExpect(jsonPath("$.success").value(false))
 				.andExpect(jsonPath("$.message").value("Invalid userId or password."));
+	}
+
+	@Test
+	void refresh_fail_whenRefreshTokenInvalid() throws Exception {
+		// given
+		String requestBody = """
+				{
+				  "refreshToken": "invalid.refresh.token"
+				}
+				""";
+
+		when(authService.refresh(any(RefreshTokenRequest.class)))
+				.thenThrow(new BadCredentialsException("Invalid refresh token."));
+
+		// when & then
+		mockMvc.perform(post("/api/auth/refresh").contentType(MediaType.APPLICATION_JSON).content(requestBody))
+				.andExpect(status().isUnauthorized()).andExpect(jsonPath("$.success").value(false))
+				.andExpect(jsonPath("$.message").value("Invalid refresh token."));
 	}
 
 	@Test
